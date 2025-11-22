@@ -22,10 +22,8 @@
         .panel-scroll { max-height: 65vh; overflow-y: auto; }
         
         /* PRIORITY REPORTS STYLING */
-        .report-card-critical { border-left: 5px solid #dc3545; background-color: #fff5f5; order: -1; } /* Critical Priority */
+        .report-card-critical { border-left: 5px solid #dc3545; background-color: #fff5f5; order: -1; } 
         .report-card-normal { border-left: 5px solid #6c757d; order: 10; }
-        
-        /* BLINKING BADGE */
         .blinking { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.5; } }
 
@@ -51,10 +49,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold text-dark">Mission Control Center</h3>
-                    <p class="text-muted mb-0">Region: <strong class="text-primary">Odisha Coastal Zone</strong></p>
+                    <p class="text-muted mb-0">System Status: <strong class="text-success">Online & Monitoring</strong></p>
                 </div>
                 <button class="btn btn-warning fw-bold shadow-sm" onclick="simulateScraperInput()">
-                    <i class="bi bi-robot"></i> RUN AI SCRAPER
+                    <i class="bi bi-robot"></i> RUN AI SCRAPER (Random)
                 </button>
             </div>
 
@@ -116,126 +114,177 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMap&loading=async" async defer></script>
 
 <script>
-     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
+    // ================= CONFIGURATION =================
+    const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
     let map;
-    let activeAlertsCache = []; // Stores active disasters to compare distance
+    let activeAlertsCache = []; 
+    let mapOverlays = []; // Store circles/markers to clear them properly
 
-    // ================= 1. INIT (FIXED ORDER) =================
+    // ================= 1. INIT =================
     async function initMap() {
-        const center = { lat: 20.2961, lng: 85.8245 };
+        const indiaCenter = { lat: 22.3511, lng: 78.6677 }; 
         map = new google.maps.Map(document.getElementById("googleMap"), {
-            zoom: 7, center: center, mapTypeId: 'terrain',
+            zoom: 5, 
+            center: indiaCenter, 
+            mapTypeId: 'terrain',
             styles: [{ elementType: "geometry", stylers: [{ color: "#242f3e" }] }]
         });
         
         setupRealtimeListeners();
-
-        // CRITICAL FIX: Wait for Alerts BEFORE fetching reports
-        // This ensures the "Priority Logic" knows what the Red Zones are first.
-        await fetchActiveBroadcasts(); 
+        await fetchActiveBroadcasts(); // Load Red Zones first
         fetchPendingAlerts();
         fetchCitizenReports(); 
     }
 
     function setupRealtimeListeners() {
+        // Listen for ANY change to alerts
         supabase.channel('admin-global').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, async payload => {
+            // If New Alert comes (from n8n), show it in Yellow List
             if(payload.new.status === 'Pending') createPendingCard(payload.new);
+            
+            // If Status changes to Active, Redraw the Map
             if(payload.new.status === 'Active' || payload.new.status === 'Resolved') {
-                await fetchActiveBroadcasts(); // Update cache first
-                fetchCitizenReports(); // Then re-sort reports
+                await fetchActiveBroadcasts(); 
+                fetchCitizenReports(); 
             }
         }).subscribe();
 
+        // Listen for Citizen Reports
         supabase.channel('admin-reports-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'citizen_reports' }, payload => {
             addReportMarker(payload.new);
             fetchCitizenReports();
         }).subscribe();
     }
 
-    // ================= CITIZEN REPORTS (PRIORITY LOGIC) =================
-    async function fetchCitizenReports() {
-        const { data: reports } = await supabase.from('citizen_reports').select('*').order('created_at', { ascending: false }).limit(50);
-        const container = document.getElementById('citizen-reports-feed');
-        container.innerHTML = '';
-
-        if(!reports || reports.length === 0) { container.innerHTML = '<div class="text-center mt-5 text-muted">No reports yet.</div>'; return; }
-
-        // 1. Identify Critical Reports
-        const processedReports = reports.map(report => {
-            let isCritical = false;
-            let matchedAlert = null;
-            
-            // Compare report location against ALL active Red Zones
-            activeAlertsCache.forEach(alert => {
-                const d = getDistanceKm(report.latitude, report.longitude, alert.latitude || 20.94, alert.longitude || 86.45);
-                if(d <= (alert.radius_km || 50)) { 
-                    isCritical = true; 
-                    matchedAlert = alert.title; 
-                }
-            });
-            return { ...report, isCritical, matchedAlert };
-        });
-
-        // 2. Sort (Critical First)
-        processedReports.sort((a, b) => (a.isCritical === b.isCritical) ? 0 : a.isCritical ? -1 : 1);
-
-        // 3. Render
-        processedReports.forEach(r => {
-            // If Critical, show RED badge. If Normal, show Grey.
-            const badge = r.isCritical 
-                ? `<span class="badge bg-danger blinking">🔥 CRITICAL ZONE</span>` 
-                : `<span class="badge bg-secondary">General</span>`;
-            
-            // Visual Highlight
-            const borderClass = r.isCritical ? 'report-card-critical' : 'report-card-normal';
-            
-            const html = `
-                <div class="card mb-2 shadow-sm ${borderClass}">
-                    <div class="card-body p-2">
-                        <div class="d-flex justify-content-between">
-                            <strong class="text-dark">${r.category || 'Unknown'}</strong>
-                            <small class="text-muted">${new Date(r.created_at).toLocaleTimeString()}</small>
-                        </div>
-                        <div class="mb-1">${badge}</div>
-                        <p class="small mb-1 text-secondary">${r.details || 'No details.'}</p>
-                        <div class="d-flex gap-2 mt-2">
-                            <button class="btn btn-sm btn-outline-primary w-100" onclick="focusMap(${r.latitude}, ${r.longitude})">📍 Locate</button>
-                            ${r.image_url ? `<a href="${r.image_url}" target="_blank" class="btn btn-sm btn-outline-secondary w-100">📷 Evidence</a>` : ''}
-                        </div>
-                    </div>
-                </div>`;
-            container.innerHTML += html;
-            
-            // Ensure map marker exists
-            addReportMarker(r); 
-        });
-    }
-
-    // ================= HELPERS & ACTIONS =================
-    function getDistanceKm(lat1, lon1, lat2, lon2) {
-        var R = 6371; var dLat = (lat2-lat1)*(Math.PI/180); var dLon = (lon2-lon1)*(Math.PI/180);
-        var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2); 
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    }
-
-    function focusMap(lat, lng) { map.panTo({ lat, lng }); map.setZoom(12); }
-
-    // We populate 'activeAlertsCache' here so the report filter knows what to check
+    // ================= 2. MAP & BROADCAST LOGIC (THE FIX) =================
     async function fetchActiveBroadcasts() {
         const { data } = await supabase.from('alerts').select('*').eq('status', 'Active');
         activeAlertsCache = data || []; 
         
         const container = document.getElementById('active-broadcasts-container');
         container.innerHTML = '';
-        if(!data || data.length === 0) { container.innerHTML = '<p class="text-muted small text-center">No active disasters.</p>'; return; }
+        
+        // 1. CLEAR OLD MAP OBJECTS
+        mapOverlays.forEach(obj => obj.setMap(null));
+        mapOverlays = [];
+
+        if(!data || data.length === 0) { 
+            container.innerHTML = '<p class="text-muted small text-center">No active disasters.</p>'; 
+            return; 
+        }
+
+        // 2. BOUNDS OBJECT (To Auto-Zoom the Map)
+        const bounds = new google.maps.LatLngBounds();
+
         data.forEach(alert => {
-            new google.maps.Circle({ strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 2, fillColor: "#FF0000", fillOpacity: 0.35, map, center: { lat: alert.latitude||20.94, lng: alert.longitude||86.45 }, radius: (alert.radius_km||50)*1000 });
-            container.innerHTML += `<div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2"><div><strong class="text-danger">● LIVE:</strong> ${alert.title}</div><button class="btn btn-outline-success btn-sm" onclick="resolveAlert(${alert.id})">✅ End</button></div>`;
+            // USE DB VALUES (Fallback to Odisha only if DB is empty)
+            const alertCenter = { 
+                lat: alert.latitude || 20.94, 
+                lng: alert.longitude || 86.45 
+            };
+
+            // A. Draw Red Circle (Radius from DB)
+            const circle = new google.maps.Circle({ 
+                strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 2, 
+                fillColor: "#FF0000", fillOpacity: 0.35, map, 
+                center: alertCenter, 
+                radius: (alert.radius_km || 50) * 1000 // Convert km to meters
+            });
+            mapOverlays.push(circle);
+            
+            // B. Add Invisible Marker for Hover Title
+            const labelMarker = new google.maps.Marker({
+                position: alertCenter,
+                map: map,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0 }, // Invisible icon
+                title: `ACTIVE ZONE: ${alert.title}` // Hover text
+            });
+            mapOverlays.push(labelMarker);
+
+            // Expand map view to include this disaster
+            bounds.extend(alertCenter);
+
+            // C. Update Sidebar List
+            container.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                    <div>
+                        <strong class="text-danger">● LIVE:</strong> ${alert.title}
+                        <br><small class="text-muted">Lat: ${alertCenter.lat.toFixed(2)}, Lng: ${alertCenter.lng.toFixed(2)}</small>
+                    </div>
+                    <button class="btn btn-outline-success btn-sm" onclick="resolveAlert(${alert.id})">✅ End</button>
+                </div>`;
         });
+
+        // 3. AUTO-ZOOM MAP TO FIT ALL ALERTS
+        if (data.length > 0) {
+            map.fitBounds(bounds);
+            // If only 1 alert, zoom out slightly so it doesn't look too close
+            if(data.length === 1) {
+                const listener = google.maps.event.addListener(map, "idle", () => { 
+                    if (map.getZoom() > 8) map.setZoom(8); 
+                    google.maps.event.removeListener(listener); 
+                });
+            }
+        }
     }
 
+    // ================= 3. ACTIONS (FIXED) =================
+    
+    // 🔥 CRITICAL FIX: REMOVED HARDCODED LAT/LNG
+    // This function now ONLY changes the status. It trusts the Lat/Lng provided by n8n/Simulation.
+    async function broadcast(id) {
+        console.log("Broadcasting ID:", id);
+        
+        const { error } = await supabase
+            .from('alerts')
+            .update({ status: 'Active' }) // <--- LOOK! No lat/lng overwrite here.
+            .eq('id', id);
+
+        if(error) alert("Error: " + error.message);
+        else document.getElementById(`alert-${id}`).remove();
+    }
+
+    async function resolveAlert(id) {
+        if(confirm("End alert? This will turn the zone Green.")) { 
+            await supabase.from('alerts').update({ status: 'Resolved' }).eq('id', id); 
+            fetchActiveBroadcasts();
+        } 
+    }
+
+    // RANDOMIZED SIMULATOR (To test Multiple Regions)
+    async function simulateScraperInput() {
+        const scenarios = [
+            { title: "Cyclone Dana (Odisha)", lat: 20.94, lng: 86.45, summary: "Deep depression over Bay of Bengal." },
+            { title: "Mumbai Flash Flood", lat: 19.0760, lng: 72.8777, summary: "Heavy rainfall causing urban flooding." },
+            { title: "Delhi Smog Emergency", lat: 28.6139, lng: 77.2090, summary: "AQI crossed 500. Visibility near zero." },
+            { title: "Chennai Cyclone", lat: 13.0827, lng: 80.2707, summary: "Cyclonic storm approaching coast." }
+        ];
+        
+        const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+        await supabase.from('alerts').insert({
+            title: randomScenario.title,
+            severity: "Critical",
+            summary: randomScenario.summary,
+            status: "Pending",
+            latitude: randomScenario.lat,
+            longitude: randomScenario.lng,
+            radius_km: 50,
+            safety_steps: ["Stay Indoors", "Charge Battery"]
+        });
+        
+        // Auto-switch tab to show the new alert
+        const triggerEl = document.querySelector('button[data-bs-target="#ai-panel"]');
+        bootstrap.Tab.getInstance(triggerEl).show();
+    }
+
+    // ... [Rest of the Helper Functions] ...
+    // (fetchPendingAlerts, createPendingCard, fetchCitizenReports, addReportMarker, getDistanceKm, focusMap)
+    // Paste them here exactly as they were in previous versions.
+    
     async function fetchPendingAlerts() { const { data } = await supabase.from('alerts').select('*').eq('status', 'Pending'); if(data) data.forEach(createPendingCard); }
     function createPendingCard(data) {
         if(document.getElementById(`alert-${data.id}`)) return;
@@ -243,8 +292,42 @@
         const html = `<div class="card mb-3 border-warning shadow-sm" id="alert-${data.id}"><div class="card-body"><h6 class="fw-bold text-danger">⚠️ ${data.title}</h6><div class="bg-light p-2 rounded mt-2 mb-2"><small class="text-secondary fw-bold">AI ANALYSIS:</small><br><span class="small">${data.summary}</span></div><button class="btn btn-danger btn-sm fw-bold w-100" onclick="broadcast(${data.id})">VERIFY & BROADCAST 📡</button></div></div>`;
         document.getElementById('incoming-alerts').insertAdjacentHTML('afterbegin', html);
     }
-    async function broadcast(id) { await supabase.from('alerts').update({ status: 'Active', latitude: 20.94, longitude: 86.45, radius_km: 50 }).eq('id', id); document.getElementById(`alert-${id}`).remove(); }
-    async function resolveAlert(id) { if(confirm("End alert?")) { await supabase.from('alerts').update({ status: 'Resolved' }).eq('id', id); location.reload(); } }
+
+    async function fetchCitizenReports() {
+        const { data: reports } = await supabase
+            .from('citizen_reports')
+            .select('*')
+            .eq('status', 'Open') // <--- THIS IS THE CRITICAL FILTER
+            .order('created_at', { ascending: false })
+            .limit(50);
+            
+        const container = document.getElementById('citizen-reports-feed');
+        container.innerHTML = '';
+
+        if(!reports || reports.length === 0) { 
+            container.innerHTML = '<div class="text-center mt-5 text-muted"><i class="bi bi-check-circle text-success display-4"></i><br>All active incidents assigned.</div>'; 
+            return; 
+        }
+        const processedReports = reports.map(report => {
+            let isCritical = false;
+            activeAlertsCache.forEach(alert => {
+                const d = getDistanceKm(report.latitude, report.longitude, alert.latitude || 20.94, alert.longitude || 86.45);
+                if(d <= (alert.radius_km || 50)) isCritical = true;
+            });
+            return { ...report, isCritical };
+        });
+        processedReports.sort((a, b) => (a.isCritical === b.isCritical) ? 0 : a.isCritical ? -1 : 1);
+
+        processedReports.forEach(r => {
+            const badge = r.isCritical ? `<span class="badge bg-danger blinking">🔥 CRITICAL ZONE</span>` : `<span class="badge bg-secondary">General</span>`;
+            const borderClass = r.isCritical ? 'report-card-critical' : 'report-card-normal';
+            container.innerHTML += `<div class="card mb-2 shadow-sm ${borderClass}"><div class="card-body p-2"><div class="d-flex justify-content-between"><strong class="text-dark">${r.category || 'Unknown'}</strong><small class="text-muted">${new Date(r.created_at).toLocaleTimeString()}</small></div><div class="mb-1">${badge}</div><p class="small mb-1 text-secondary">${r.details || 'No details.'}</p><div class="d-flex gap-2 mt-2"><button class="btn btn-sm btn-outline-primary w-100" onclick="focusMap(${r.latitude}, ${r.longitude})">📍 Locate</button>${r.image_url ? `<a href="${r.image_url}" target="_blank" class="btn btn-sm btn-outline-secondary w-100">📷 Evidence</a>` : ''}</div></div></div>`;
+            addReportMarker(r); 
+        });
+    }
+
+    function getDistanceKm(lat1, lon1, lat2, lon2) { var R = 6371; var dLat = (lat2-lat1)*(Math.PI/180); var dLon = (lon2-lon1)*(Math.PI/180); var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2); return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); }
+    function focusMap(lat, lng) { map.panTo({ lat, lng }); map.setZoom(12); }
     function addReportMarker(data) {
         let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
         if(data.category === 'Flood') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
@@ -252,7 +335,6 @@
         const info = new google.maps.InfoWindow({ content: `<strong>${data.category}</strong><br>${data.details}` });
         marker.addListener("click", () => info.open(map, marker));
     }
-    async function simulateScraperInput() { await supabase.from('alerts').insert({ title: "Cyclone Dana (AI Detected)", severity: "Critical", summary: "Satellite imagery confirms deep depression.", status: "Pending" }); }
 </script>
 </body>
 </html>
