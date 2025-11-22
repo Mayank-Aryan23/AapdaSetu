@@ -6,47 +6,29 @@
     <title>AapdaSetu | Disaster Response</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* CUSTOM STYLES FOR LANDING */
         body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-        
-        /* The Split Screen Landing */
-        #landing-view {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .role-card {
-            transition: transform 0.3s;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
+        #landing-view { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .role-card { transition: transform 0.3s; cursor: pointer; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .role-card:hover { transform: translateY(-10px); }
-        
-        /* Admin Dashboard Styles */
-        #admin-dashboard { display: none; } /* Hidden by default */
-        .map-container { height: 500px; width: 100%; border-radius: 10px; }
-        .status-pending { border-left: 5px solid #ffc107; }
-        .status-active { border-left: 5px solid #dc3545; }
+        .captcha-box { background-color: #f8f9fa; border: 1px dashed #ced4da; color: #495057; font-size: 1.2rem; font-family: monospace; padding: 0.2rem 0.5rem; border-radius: 5px; letter-spacing: 4px; text-align: center; }
+        .location-btn-base { transition: all 0.2s; }
+        .location-btn-pending { background-color: #ffc107; border-color: #ffc107; color: #212529; }
+        .location-btn-success { background-color: #198754; border-color: #198754; color: white; }
     </style>
 </head>
 <body>
 
     <div id="landing-view" class="container-fluid">
         <div class="row w-100 justify-content-center gap-4">
-            
             <div class="col-12 text-center text-white mb-5">
                 <h1 class="display-4 fw-bold">AAPDASETU</h1>
                 <p class="lead">Select your role to access the disaster management portal.</p>
             </div>
-
             <div class="col-md-4">
                 <div class="card role-card p-4 text-center" onclick="selectRole('citizen')">
                     <div class="card-body">
@@ -56,7 +38,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="col-md-4">
                 <div class="card role-card p-4 text-center" onclick="selectRole('admin')">
                     <div class="card-body">
@@ -66,7 +47,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -78,117 +58,298 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="authForm">
-                        <div id="admin-inputs" class="d-none">
-                            <div class="mb-3">
-                                <label>Government ID (Email)</label>
-                                <input type="email" class="form-control" id="adminEmail" placeholder="admin@ndma.gov.in">
-                            </div>
-                            <div class="mb-3">
-                                <label>Secure Password</label>
-                                <input type="password" class="form-control" id="adminPass">
-                            </div>
-                        </div>
+                    
+                    <div id="admin-inputs" class="d-none">
+                        <div class="mb-3"><label>Government ID</label><input type="email" class="form-control" id="adminEmail" placeholder="admin@ndma.gov.in"></div>
+                        <div class="mb-3"><label>Password</label><input type="password" class="form-control" id="adminPass"></div>
+                    </div>
 
-                        <div id="citizen-inputs" class="d-none text-center">
-                            <p>To provide hyperlocal alerts, we need your location.</p>
-                            <button type="button" class="btn btn-warning w-100" onclick="getGeoLocation()">
-                                <i class="bi bi-geo-alt"></i> Auto-Fetch Location
-                            </button>
-                            <p id="location-status" class="mt-2 small text-muted"></p>
-                        </div>
-                    </form>
+                    <div id="citizen-inputs" class="d-none">
+                        <ul class="nav nav-pills nav-fill mb-4">
+                            <li class="nav-item"><a class="nav-link active" id="login-tab" href="#" onclick="showForm('login'); return false;">Login</a></li>
+                            <li class="nav-item"><a class="nav-link" id="register-tab" href="#" onclick="showForm('register'); return false;">Register</a></li>
+                        </ul>
+
+                        <form id="loginForm" class="auth-form" data-form="login">
+                            <div class="mb-3"><label class="form-label small fw-bold">Email</label><input type="email" class="form-control" id="loginEmail" required></div>
+                            <div class="mb-3"><label class="form-label small fw-bold">Password</label><input type="password" class="form-control" id="loginPassword" required></div>
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-7"><input type="text" class="form-control" id="loginCaptchaInput" placeholder="CAPTCHA" required></div>
+                                <div class="col-5 d-flex align-items-end justify-content-end"><div id="loginCaptchaDisplay" class="captcha-box me-2"></div><button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateCaptcha('login')"><i class="bi bi-arrow-repeat"></i></button></div>
+                            </div>
+                            <div class="d-grid gap-2 mb-3">
+                                <button type="button" class="btn location-btn-base location-btn-pending fw-bold" id="loginLocationBtn" onclick="getLocation('login')"><i class="bi bi-geo-alt-fill me-2"></i> Enable Location</button>
+                                <p id="loginLocationStatus" class="text-center small text-muted mb-0"></p>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2" id="loginBtn">ACCESS PORTAL</button>
+                        </form>
+
+                        <form id="registerForm" class="auth-form d-none" data-form="register">
+                            <div class="mb-3"><label class="form-label small fw-bold">Full Name</label><input type="text" class="form-control" id="regName" required></div>
+                            <div class="row">
+                                <div class="col-md-8 mb-3"><label class="form-label small fw-bold">Email</label><input type="email" class="form-control" id="regEmail" required></div>
+                                <div class="col-md-4 mb-3"><label class="form-label small fw-bold">Age</label><input type="number" class="form-control" id="regAge" min="18" required></div>
+                            </div>
+                            <div class="mb-3"><label class="form-label small fw-bold">Password</label><input type="password" class="form-control" id="regPassword" required></div>
+                            <div class="mb-3"><label class="form-label small fw-bold">Re-enter Password</label><input type="password" class="form-control" id="regConfirmPassword" required></div>
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-7"><input type="text" class="form-control" id="registerCaptchaInput" placeholder="CAPTCHA" required></div>
+                                <div class="col-5 d-flex align-items-end justify-content-end"><div id="registerCaptchaDisplay" class="captcha-box me-2"></div><button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateCaptcha('register')"><i class="bi bi-arrow-repeat"></i></button></div>
+                            </div>
+                            <div class="d-grid gap-2 mb-3">
+                                <button type="button" class="btn location-btn-base location-btn-pending fw-bold" id="regLocationBtn" onclick="getLocation('register')"><i class="bi bi-geo-alt-fill me-2"></i> Enable Location (Mandatory)</button>
+                                <p id="regLocationStatus" class="text-center small text-muted mb-0"></p>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2" id="registerBtn">CREATE ACCOUNT</button>
+                        </form>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary w-100" onclick="handleLogin()">Access Portal</button>
+                <div class="modal-footer" id="modalFooter">
+                    <button type="button" class="btn btn-primary w-100" id="adminAccessBtn" style="display:none" onclick="handleAdminLogin()">Access Portal</button>
                 </div>
             </div>
         </div>
     </div>
 
-    
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script>
-        // ================= CONFIGURATION =================
-        let currentRole = null;
+        // ==================== CONFIGURATION ====================
+        const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ================= VIEW LOGIC =================
+        let currentRole = null;
+        let currentCaptchas = { login: '', register: '' };
+        let userLocation = { lat: null, lng: null };
+        const DEFAULT_LOCATION = { lat: 20.2961, lng: 85.8245 };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSessionAndRedirect();
+            generateCaptcha('login');
+            generateCaptcha('register');
+            document.getElementById('loginForm').addEventListener('submit', handleCitizenLogin);
+            document.getElementById('registerForm').addEventListener('submit', handleRegister);
+        });
+
+        // ==================== LOGIC ====================
         
-        // 1. Select Role (User clicks Card)
+        async function handleRegister(e) {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const captchaInput = document.getElementById('registerCaptchaInput').value;
+            const name = document.getElementById('regName').value;
+            const age = document.getElementById('regAge').value;
+            
+            if (password !== confirmPassword) return alert("❌ Passwords do not match.");
+            if (!validateCaptcha(captchaInput, 'register')) {
+                alert("❌ Invalid CAPTCHA.");
+                generateCaptcha('register');
+                document.getElementById('registerCaptchaInput').value = '';
+                return;
+            }
+
+            // Set Default Location if user didn't click button
+            if (!userLocation.lat) {
+                userLocation = { ...DEFAULT_LOCATION };
+                localStorage.setItem('user_lat', userLocation.lat);
+                localStorage.setItem('user_lng', userLocation.lng);
+            }
+
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true; btn.innerText = "Creating Account...";
+
+            // 1. Create Auth User
+            const { data, error } = await supabase.auth.signUp({ email, password });
+
+            if (error) {
+                alert("❌ Error: " + error.message);
+                btn.disabled = false; btn.innerText = "CREATE ACCOUNT";
+                return;
+            }
+
+            // 2. Save Profile Logic
+            if (data.user) {
+                const { error: profileError } = await supabase.from('profiles').insert({
+                    id: data.user.id,
+                    name: name,
+                    age: age,
+                    latitude: userLocation.lat,
+                    longitude: userLocation.lng
+                });
+
+                if (profileError) {
+                    console.error("Profile Error:", profileError);
+                    // IMPORTANT: Alert user if table is missing or RLS is blocking
+                    if (profileError.code === '42P01') alert("❌ Database Error: 'profiles' table does not exist. Run the SQL I gave you!");
+                    else if (profileError.code === '42501') alert("❌ Database Error: RLS is blocking insert. Disable RLS on 'profiles' table.");
+                    else alert("❌ Account created but profile save failed: " + profileError.message);
+                } else {
+                    // Success path
+                    if (!data.session) {
+                        alert("✅ Account created! Please check your email to confirm.");
+                        showForm('login');
+                    } else {
+                        alert("✅ Registration Successful! Logging in...");
+                        window.location.href = 'citizen.html';
+                    }
+                }
+            }
+            btn.disabled = false; btn.innerText = "CREATE ACCOUNT";
+        }
+
+        async function handleCitizenLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const captchaInput = document.getElementById('loginCaptchaInput').value;
+
+            if (!validateCaptcha(captchaInput, 'login')) {
+                alert("❌ Invalid CAPTCHA.");
+                generateCaptcha('login');
+                return;
+            }
+
+            if (!userLocation.lat) {
+                userLocation = { ...DEFAULT_LOCATION };
+                localStorage.setItem('user_lat', userLocation.lat);
+                localStorage.setItem('user_lng', userLocation.lng);
+            }
+
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) alert("❌ Login Failed: " + error.message);
+            else window.location.href = 'citizen.html';
+        }
+
+        function getLocation(target) {
+            const prefix = target === 'register' ? 'reg' : 'login'; // Matches IDs like regLocationBtn
+            const btn = document.getElementById(`${prefix}LocationBtn`);
+            const status = document.getElementById(`${prefix}LocationStatus`);
+            
+            if(!btn) return console.error("Button not found for", prefix);
+
+            btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Locating...';
+            status.innerText = "Requesting GPS access...";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    localStorage.setItem('user_lat', userLocation.lat);
+                    localStorage.setItem('user_lng', userLocation.lng);
+                    
+                    status.innerText = "✅ Location Verified";
+                    status.className = "text-center small text-success mb-0";
+                    btn.className = "btn location-btn-base location-btn-success fw-bold";
+                    btn.innerText = "✅ Location Enabled";
+                    btn.disabled = false;
+                }, err => {
+                    console.warn(err);
+                    status.innerText = "❌ GPS Denied. Using Manual Mode.";
+                    status.className = "text-center small text-danger mb-0";
+                    btn.className = "btn location-btn-base btn-danger fw-bold";
+                    btn.innerText = "GPS Failed";
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        // ... Helpers ...
         function selectRole(role) {
             currentRole = role;
-            const modal = new bootstrap.Modal(document.getElementById('authModal'));
-            
-            // Reset inputs
+            new bootstrap.Modal(document.getElementById('authModal')).show();
             document.getElementById('admin-inputs').classList.add('d-none');
             document.getElementById('citizen-inputs').classList.add('d-none');
+            document.getElementById('adminAccessBtn').style.display = 'none';
 
-            // Show appropriate inputs based on role
-            if(role === 'admin') {
+            if (role === 'admin') {
                 document.getElementById('modalTitle').innerText = "Admin Authorization";
                 document.getElementById('admin-inputs').classList.remove('d-none');
+                document.getElementById('adminAccessBtn').style.display = 'block';
             } else {
                 document.getElementById('modalTitle').innerText = "Citizen Verification";
                 document.getElementById('citizen-inputs').classList.remove('d-none');
-            }
-            modal.show();
-        }
-
-        // 2. Handle Login / Navigation
-        // 2. Handle Login / Navigation
-        function handleLogin() {
-            // Close Modal
-            const modalEl = document.getElementById('authModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-
-            if(currentRole === 'admin') {
-                // >>> CHANGE THIS LINE <<<
-                // Old: window.location.href = 'admin.html';
-                
-                // New: Point to the new folder
-                console.log("Redirecting to Admin Portal...");
-                window.location.href = 'admin/index.html'; 
-            } else {
-                // Citizen Logic
-                alert("Location Verified. Loading Citizen Portal...");
-                window.location.href = 'citizen.html';
+                showForm('login');
             }
         }
 
-        // Helper: Mock Geo-Location for Citizen
-        // Helper: Real Geo-Location for Verification
-        function getGeoLocation() {
-            const statusText = document.getElementById('location-status');
-            statusText.innerText = "🛰️ Connecting to Satellites...";
-            statusText.className = "mt-2 small text-warning";
+        function showForm(target) {
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.add('d-none'));
+            document.getElementById(`${target}Form`).classList.remove('d-none');
+            document.querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
+            document.getElementById(`${target}-tab`).classList.add('active');
+            generateCaptcha(target);
+        }
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        // Success
-                        const lat = position.coords.latitude.toFixed(4);
-                        const lng = position.coords.longitude.toFixed(4);
-                        
-                        statusText.innerHTML = `✅ <strong>Verified:</strong> ${lat}, ${lng}`;
-                        statusText.className = "mt-2 small text-success";
-                        
-                        // Optional: Save to localStorage to use later
-                        localStorage.setItem('user_lat', lat);
-                        localStorage.setItem('user_lng', lng);
-                    },
-                    (error) => {
-                        // Error
-                        statusText.innerText = "❌ GPS Denied. Please enable location.";
-                        statusText.className = "mt-2 small text-danger";
-                    }
-                );
-            } else {
-                statusText.innerText = "❌ Browser does not support Geolocation.";
+        function generateCaptcha(target) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let c = ''; for (let i = 0; i < 5; i++) c += chars.charAt(Math.floor(Math.random() * chars.length));
+            currentCaptchas[target] = c;
+            const el = document.getElementById(`${target === 'register' ? 'register' : 'login'}CaptchaDisplay`);
+            if(el) el.innerText = c;
+        }
+
+        function validateCaptcha(input, target) { return input.toUpperCase() === currentCaptchas[target].toUpperCase(); }
+        
+        // ==================== ADMIN AUTH LOGIC ====================
+        async function handleAdminLogin() {
+            const emailInput = document.getElementById('adminEmail');
+            const passInput = document.getElementById('adminPass');
+            const loginBtn = document.getElementById('adminAccessBtn'); // The button inside modal footer
+
+            const email = emailInput.value.trim();
+            const password = passInput.value.trim();
+
+            if (!email || !password) {
+                alert("Please enter Government ID and Password.");
+                return;
             }
+
+            // UI Feedback
+            const originalText = loginBtn.innerText;
+            loginBtn.innerText = "Verifying Credentials...";
+            loginBtn.disabled = true;
+
+            try {
+                // CHECK DATABASE
+                const { data, error } = await supabase
+                    .from('admin_directory')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('password', password) // Checks for exact match
+                    .single(); // Expecting exactly one row
+
+                if (error || !data) {
+                    console.warn("Login Failed:", error);
+                    alert("❌ Access Denied: Invalid Government Credentials.");
+                    
+                    // Reset Button
+                    loginBtn.innerText = originalText;
+                    loginBtn.disabled = false;
+                } else {
+                    // SUCCESS
+                    console.log("Admin Verified:", data.name);
+                    alert(`✅ Welcome, ${data.name}.\nAccessing Secure Command Center...`);
+                    
+                    // Optional: Store admin session flag
+                    sessionStorage.setItem('admin_logged_in', 'true');
+                    sessionStorage.setItem('admin_name', data.name);
+
+                    // Redirect
+                    window.location.href = 'admin/index.html';
+                }
+
+            } catch (err) {
+                console.error("Unexpected Error:", err);
+                alert("System Error. Check console.");
+                loginBtn.innerText = originalText;
+                loginBtn.disabled = false;
+            }
+        }
+
+        async function checkSessionAndRedirect() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) console.log("Session active");
         }
     </script>
 </body>
