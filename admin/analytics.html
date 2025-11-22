@@ -30,18 +30,30 @@
         </div>
 
         <div class="col-md-10 main-content">
-            <h3 class="fw-bold text-dark mb-4">Post-Disaster Analysis</h3>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold text-dark">Post-Disaster Analytics</h3>
+                <button class="btn btn-outline-primary btn-sm" onclick="loadAnalytics()"><i class="bi bi-arrow-clockwise"></i> Refresh Data</button>
+            </div>
+
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-8">
                     <div class="card stat-card p-3">
-                        <h5 class="fw-bold">Response Time (vs Historic Data)</h5>
-                        <canvas id="timeChart"></canvas>
+                        <h5 class="fw-bold mb-3">Response Efficiency (Minutes to Deploy)</h5>
+                        <canvas id="timeChart" height="120"></canvas>
+                        <p class="text-muted small mt-2 text-center">Blue line shows actual time taken for recent incidents.</p>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card stat-card p-3">
-                        <h5 class="fw-bold">Incident Categories</h5>
-                        <canvas id="catChart"></canvas>
+
+                <div class="col-md-4">
+                    <div class="card stat-card p-3 h-100">
+                        <h5 class="fw-bold mb-3">Incident Breakdown</h5>
+                        <div style="height: 250px; display: flex; justify-content: center;">
+                            <canvas id="catChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <h2 class="fw-bold text-success" id="total-resolved">0</h2>
+                            <small class="text-muted">Total Incidents Managed</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -49,15 +61,130 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    new Chart(document.getElementById('timeChart'), {
-        type: 'line',
-        data: { labels: ['Day 1', 'Day 2', 'Day 3'], datasets: [{ label: 'Avg Response (Hours)', data: [5, 3.5, 2], borderColor: '#0d6efd' }] }
-    });
-    new Chart(document.getElementById('catChart'), {
-        type: 'doughnut',
-        data: { labels: ['Medical', 'Flood', 'Food'], datasets: [{ data: [30, 50, 20], backgroundColor: ['#dc3545', '#0d6efd', '#ffc107'] }] }
-    });
+    // ================= CONFIGURATION =================
+    const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let timeChartInstance = null;
+    let catChartInstance = null;
+
+    window.onload = function() {
+        loadAnalytics(); // Initial Load
+        setupLiveAnalytics(); // <--- Add this!
+    };
+
+    function setupLiveAnalytics() {
+        // Update charts whenever a report is Assigned or Resolved
+        supabase.channel('analytics-live')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'citizen_reports' }, payload => {
+                console.log("New Analytics Data!", payload);
+                loadAnalytics(); // Re-draw charts instantly
+            })
+            .subscribe();
+    }
+
+    async function loadAnalytics() {
+        // 1. FETCH REAL DATA
+        const { data: reports, error } = await supabase
+            .from('citizen_reports')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (error || !reports) return console.error(error);
+
+        // 2. PROCESS DATA FOR CATEGORY CHART
+        const categories = {};
+        let resolvedCount = 0;
+        
+        reports.forEach(r => {
+            // Count Categories
+            categories[r.category] = (categories[r.category] || 0) + 1;
+            // Count Resolved/Assigned
+            if (r.status === 'Assigned' || r.status === 'Resolved') resolvedCount++;
+        });
+
+        document.getElementById('total-resolved').innerText = reports.length;
+
+        // 3. PROCESS DATA FOR RESPONSE TIME CHART
+        // Only look at reports that have been Assigned (have a deployment_time)
+        const responseLabels = [];
+        const responseData = [];
+
+        reports.forEach(r => {
+            if (r.deployment_time && r.created_at) {
+                const created = new Date(r.created_at);
+                const deployed = new Date(r.deployment_time);
+                // Calculate difference in Minutes
+                const diffMinutes = Math.round((deployed - created) / 1000 / 60);
+                
+                responseLabels.push(`Incident #${r.id}`);
+                responseData.push(diffMinutes);
+            }
+        });
+
+        // 4. RENDER CHARTS
+        renderCategoryChart(categories);
+        renderTimeChart(responseLabels, responseData);
+    }
+
+    function renderCategoryChart(dataObj) {
+        const ctx = document.getElementById('catChart');
+        const labels = Object.keys(dataObj);
+        const values = Object.values(dataObj);
+        
+        // Define colors dynamically
+        const colors = labels.map(l => {
+            if(l === 'Medical') return '#dc3545'; // Red
+            if(l === 'Flood') return '#0d6efd';   // Blue
+            if(l === 'Food') return '#ffc107';    // Yellow
+            return '#6c757d'; // Grey default
+        });
+
+        if (catChartInstance) catChartInstance.destroy();
+
+        catChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    data: values, 
+                    backgroundColor: colors,
+                    borderWidth: 0
+                }] 
+            },
+            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function renderTimeChart(labels, data) {
+        const ctx = document.getElementById('timeChart');
+
+        if (timeChartInstance) timeChartInstance.destroy();
+
+        timeChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'Response Time (Minutes)', 
+                    data: data, 
+                    borderColor: '#0d6efd', 
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }] 
+            },
+            options: { 
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Minutes' } }
+                }
+            }
+        });
+    }
 </script>
 </body>
 </html>
