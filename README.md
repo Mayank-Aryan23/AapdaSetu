@@ -1,0 +1,2 @@
+# AapdaSetu
+Project for OpenAIxNXTWAVE
