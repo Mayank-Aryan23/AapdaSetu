@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AapdaSetu | Admin Command Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; overflow-x: hidden; }
+        
+        /* SIDEBAR */
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; padding-top: 20px; }
+        .sidebar a { color: #b0c4de; text-decoration: none; padding: 12px 20px; display: block; transition: 0.3s; border-left: 4px solid transparent; }
+        .sidebar a:hover, .sidebar a.active { background: #34495e; color: #fff; border-left: 4px solid #3498db; }
+        
+        /* CARDS & MAP */
+        .map-container { height: 55vh; width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .stat-card { border: none; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
+        
+        /* RIGHT PANEL SCROLL */
+        .panel-scroll { max-height: 65vh; overflow-y: auto; }
+        
+        /* PRIORITY STYLES */
+        .report-card-critical { border-left: 5px solid #dc3545; background-color: #fff5f5; }
+        .report-card-normal { border-left: 5px solid #6c757d; }
+        
+        /* TABS */
+        .nav-tabs .nav-link { color: #495057; font-weight: 600; }
+        .nav-tabs .nav-link.active { color: #000; border-top: 3px solid #0d6efd; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <h4 class="text-center mb-4 fw-bold">🛑 AapdaSetu</h4>
+            <a href="#" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="#"><i class="bi bi-clipboard-check me-2"></i> Mission Control</a>
+            <a href="#"><i class="bi bi-people me-2"></i> Resource Alloc.</a>
+            <hr>
+            <a href="index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold text-dark">Disaster Response Console</h2>
+                    <p class="text-muted mb-0">Region: <strong class="text-primary">Odisha Coastal Zone</strong></p>
+                </div>
+                <button class="btn btn-warning fw-bold shadow-sm" onclick="simulateScraperInput()">
+                    <i class="bi bi-robot"></i> RUN AI SCRAPER
+                </button>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card stat-card p-2 mb-3">
+                        <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between">
+                            <span><i class="bi bi-geo-alt-fill text-primary"></i> Live Incident Map</span>
+                            <span class="badge bg-danger" id="active-alerts-count-badge">0 Active Alerts</span>
+                        </div>
+                        <div id="googleMap" class="map-container"></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="card-header bg-success text-white fw-bold"><i class="bi bi-broadcast"></i> LIVE BROADCASTS (Public)</div>
+                        <div class="card-body" id="active-broadcasts-container">
+                            <p class="text-muted small">No active disasters.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card stat-card h-100">
+                        <div class="card-header bg-light p-0">
+                            <ul class="nav nav-tabs nav-fill" id="adminTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active py-3" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-panel" type="button">
+                                        <i class="bi bi-stars text-warning"></i> AI Alerts
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link py-3" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports-panel" type="button">
+                                        <i class="bi bi-person-exclamation text-danger"></i> Citizen SOS
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="card-body panel-scroll tab-content">
+                            
+                            <div class="tab-pane fade show active" id="ai-panel">
+                                <div id="incoming-alerts">
+                                    <div class="text-center text-muted mt-5" id="ai-empty-state">
+                                        <i class="bi bi-shield-check display-1 opacity-25"></i>
+                                        <p class="mt-3">AI Scraper is monitoring sources...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="reports-panel">
+                                <div class="d-flex justify-content-between mb-3 align-items-center">
+                                    <small class="text-muted fw-bold">PRIORITY SORTED</small>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="fetchCitizenReports()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                                </div>
+                                <div id="citizen-reports-feed">
+                                    <div class="text-center text-muted mt-5">
+                                        <p>Loading reports...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div> 
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMap&loading=async" async defer></script>
+
+<script>
+    const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let map;
+    let activeAlertsCache = []; // Store active alerts to calculate distances locally
+
+    // ================= 1. INIT =================
+    function initMap() {
+        const center = { lat: 20.2961, lng: 85.8245 };
+        map = new google.maps.Map(document.getElementById("googleMap"), {
+            zoom: 7, center: center, mapTypeId: 'terrain',
+            styles: [{ elementType: "geometry", stylers: [{ color: "#242f3e" }] }]
+        });
+        
+        setupRealtimeListeners();
+        fetchActiveBroadcasts();
+        fetchPendingAlerts();
+        fetchCitizenReports(); // Load reports on startup
+    }
+
+    // ================= 2. REALTIME & DATA =================
+    function setupRealtimeListeners() {
+        supabase.channel('admin-global').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
+            if(payload.new.status === 'Pending') createPendingCard(payload.new);
+            if(payload.new.status === 'Active' || payload.new.status === 'Resolved') {
+                fetchActiveBroadcasts();
+                // Also refresh reports because priority statuses might change
+                setTimeout(fetchCitizenReports, 1000); 
+            }
+        }).subscribe();
+
+        supabase.channel('admin-reports-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'citizen_reports' }, payload => {
+            addReportMarker(payload.new);
+            fetchCitizenReports(); // Refresh the list to show new item
+        }).subscribe();
+    }
+
+    // ================= 3. CITIZEN REPORTS LOGIC (NEW) =================
+    async function fetchCitizenReports() {
+        // 1. Get all reports
+        const { data: reports } = await supabase.from('citizen_reports').select('*').order('created_at', { ascending: false }).limit(50);
+        const container = document.getElementById('citizen-reports-feed');
+        container.innerHTML = '';
+
+        if(!reports || reports.length === 0) {
+            container.innerHTML = '<div class="text-center mt-5 text-muted">No reports yet.</div>';
+            return;
+        }
+
+        // 2. SORT: Critical Zones First
+        // We check if a report is inside ANY active alert radius
+        const processedReports = reports.map(report => {
+            let isCritical = false;
+            let matchedAlert = null;
+
+            activeAlertsCache.forEach(alert => {
+                const d = getDistanceKm(report.latitude, report.longitude, alert.latitude || 20.94, alert.longitude || 86.45);
+                if(d <= (alert.radius_km || 50)) {
+                    isCritical = true;
+                    matchedAlert = alert.title;
+                }
+            });
+            return { ...report, isCritical, matchedAlert };
+        });
+
+        // Sort: Critical (true) comes before Normal (false)
+        processedReports.sort((a, b) => (a.isCritical === b.isCritical) ? 0 : a.isCritical ? -1 : 1);
+
+        // 3. RENDER
+        processedReports.forEach(r => {
+            const badge = r.isCritical 
+                ? `<span class="badge bg-danger blinking">🔥 CRITICAL ZONE: ${r.matchedAlert}</span>` 
+                : `<span class="badge bg-secondary">General Report</span>`;
+            
+            const borderClass = r.isCritical ? 'report-card-critical' : 'report-card-normal';
+
+            const html = `
+                <div class="card mb-2 shadow-sm ${borderClass}">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between">
+                            <strong class="text-dark">${r.category || 'Unknown'}</strong>
+                            <small class="text-muted">${new Date(r.created_at).toLocaleTimeString()}</small>
+                        </div>
+                        <div class="mb-1">${badge}</div>
+                        <p class="small mb-1 text-secondary">${r.details || 'No details.'}</p>
+                        
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-sm btn-outline-primary w-50" onclick="focusMap(${r.latitude}, ${r.longitude})">📍 Locate</button>
+                            ${r.image_url ? `<a href="${r.image_url}" target="_blank" class="btn btn-sm btn-outline-secondary w-50">📷 Evidence</a>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            container.innerHTML += html;
+            
+            // Also add marker to map if not present (basic check)
+            // In production, we'd manage markers array better, but for MVP this is fine
+             addReportMarker(r); 
+        });
+    }
+
+    // Helper: Distance Calc
+    function getDistanceKm(lat1, lon1, lat2, lon2) {
+        var R = 6371; 
+        var dLat = (lat2-lat1) * (Math.PI/180);
+        var dLon = (lon2-lon1) * (Math.PI/180);
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180)) * Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        return R * c;
+    }
+
+    function focusMap(lat, lng) {
+        map.panTo({ lat, lng });
+        map.setZoom(12);
+    }
+
+    // ================= 4. ALERTS & BROADCAST =================
+    async function fetchActiveBroadcasts() {
+        const { data } = await supabase.from('alerts').select('*').eq('status', 'Active');
+        
+        // Cache for report sorting
+        activeAlertsCache = data || [];
+        
+        // Update Badges
+        const count = data ? data.length : 0;
+        document.getElementById('active-alerts-count-badge').innerText = `${count} Active Alerts`;
+
+        // Update Map Circles & List
+        const container = document.getElementById('active-broadcasts-container');
+        container.innerHTML = '';
+        
+        // Clear old circles? In MVP we just reload initMap() on resolve. 
+        // Ideally we'd clear overlays, but drawing over is okay for demo flow.
+        
+        if(count === 0) {
+            container.innerHTML = '<p class="text-muted small">No active disasters.</p>';
+            return;
+        }
+
+        data.forEach(alert => {
+            new google.maps.Circle({
+                strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 2,
+                fillColor: "#FF0000", fillOpacity: 0.35, map,
+                center: { lat: alert.latitude || 20.94, lng: alert.longitude || 86.45 },
+                radius: (alert.radius_km || 50) * 1000,
+            });
+
+            container.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                    <div><strong class="text-danger">● LIVE:</strong> ${alert.title}</div>
+                    <button class="btn btn-outline-success btn-sm" onclick="resolveAlert(${alert.id})">✅ Resolve</button>
+                </div>`;
+        });
+    }
+
+    async function fetchPendingAlerts() {
+        const { data } = await supabase.from('alerts').select('*').eq('status', 'Pending');
+        if(data) data.forEach(createPendingCard);
+    }
+
+    function createPendingCard(data) {
+        if(document.getElementById(`alert-${data.id}`)) return;
+        document.getElementById('ai-empty-state').style.display = 'none';
+        
+        const html = `
+            <div class="card mb-3 border-warning shadow-sm" id="alert-${data.id}">
+                <div class="card-body">
+                    <h6 class="fw-bold text-danger">⚠️ ${data.title}</h6>
+                    <div class="bg-light p-2 rounded mt-2 mb-2">
+                        <small class="text-secondary fw-bold">AI ANALYSIS:</small><br>
+                        <span class="small">${data.summary}</span>
+                    </div>
+                    <button class="btn btn-danger btn-sm fw-bold w-100" onclick="broadcast(${data.id})">VERIFY & BROADCAST 📡</button>
+                </div>
+            </div>`;
+        document.getElementById('incoming-alerts').insertAdjacentHTML('afterbegin', html);
+    }
+
+    // ================= 5. ACTIONS =================
+    async function broadcast(id) {
+        await supabase.from('alerts').update({ status: 'Active', latitude: 20.94, longitude: 86.45, radius_km: 50 }).eq('id', id);
+        document.getElementById(`alert-${id}`).remove();
+    }
+    async function resolveAlert(id) {
+        if(confirm("End alert?")) {
+            await supabase.from('alerts').update({ status: 'Resolved' }).eq('id', id);
+            location.reload(); // Hard refresh to clear map circles for clean state
+        }
+    }
+    async function simulateScraperInput() {
+        await supabase.from('alerts').insert({
+            title: "Cyclone Dana (AI Detected)", severity: "Critical",
+            summary: "Satellite imagery confirms deep depression.", status: "Pending"
+        });
+        // Switch tab to AI so they see it appear
+        const triggerEl = document.querySelector('#ai-tab');
+        bootstrap.Tab.getInstance(triggerEl).show();
+    }
+
+    function addReportMarker(data) {
+        let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // Default
+        if(data.category === 'Flood') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+        
+        const marker = new google.maps.Marker({
+            position: { lat: data.latitude, lng: data.longitude },
+            map: map,
+            animation: google.maps.Animation.DROP,
+            title: data.category,
+            icon: iconUrl
+        });
+        const info = new google.maps.InfoWindow({ content: `<strong>${data.category}</strong><br>${data.details}` });
+        marker.addListener("click", () => info.open(map, marker));
+    }
+</script>
+</body>
+</html>

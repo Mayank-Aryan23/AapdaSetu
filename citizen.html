@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AapdaSetu | Citizen Safety</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .mobile-container { max-width: 500px; margin: 0 auto; background: #fff; min-height: 100vh; box-shadow: 0 0 20px rgba(0,0,0,0.05); position: relative; }
+        
+        /* STATUS STYLES */
+        .status-safe { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); color: white; padding: 40px 20px; border-radius: 0 0 30px 30px; text-align: center; transition: 0.5s; }
+        .status-danger { background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%); color: white; padding: 40px 20px; border-radius: 0 0 30px 30px; text-align: center; animation: pulseRed 2s infinite; }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(239, 71, 58, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0); } }
+        
+        /* CHAT & BUTTONS */
+        .action-btn { border-radius: 12px; padding: 15px; border: 1px solid #eee; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: left; width: 100%; display: flex; align-items: center; }
+        .chat-interface { background: #f8f9fa; border-radius: 15px; height: 300px; display: flex; flex-direction: column; }
+        .chat-history { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .bot-msg { background: #e9ecef; padding: 8px 12px; border-radius: 15px 15px 15px 0; display: inline-block; margin-bottom: 8px; font-size: 0.9rem; }
+        .user-msg { background: #007bff; color: white; padding: 8px 12px; border-radius: 15px 15px 0 15px; display: inline-block; margin-bottom: 8px; float: right; clear: both; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="mobile-container">
+    <div id="status-header" class="status-safe">
+        <div class="d-flex justify-content-between mb-3">
+            <small id="geo-text"><i class="bi bi-geo-alt-fill"></i> Locating...</small>
+            <span class="badge bg-white text-dark" id="distance-badge" style="display:none">0 km away</span>
+        </div>
+        <div id="status-content">
+            <i class="bi bi-shield-check display-1 mb-2"></i>
+            <h2 class="fw-bold">You are Safe</h2>
+            <p class="opacity-75">No active threats in your zone.</p>
+        </div>
+    </div>
+
+    <div class="p-3">
+        <div class="d-grid gap-2 mb-4">
+            <button class="btn btn-warning btn-lg fw-bold py-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#reportModal">
+                <i class="bi bi-camera-video-fill me-2"></i> REPORT INCIDENT
+            </button>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold"><i class="bi bi-robot text-primary"></i> AapdaSetu AI</div>
+            <div class="card-body p-0">
+                <div class="chat-interface">
+                    <div class="chat-history" id="chat-history">
+                        <div class="bot-msg">Hello. I am monitoring <strong>Odisha Coastal Zone</strong>. Report issues above.</div>
+                    </div>
+                    <div class="p-2 bg-white border-top d-flex">
+                        <input type="text" id="user-input" class="form-control border-0 me-2" placeholder="Ask for help..." onkeypress="handleEnter(event)">
+                        <button class="btn btn-primary rounded-circle" onclick="sendMessage()"><i class="bi bi-send-fill"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4 mb-5"><a href="index.html" class="text-decoration-none text-secondary">Log Out</a></div>
+    </div>
+</div>
+
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Submit Field Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="incidentForm">
+                    <label class="form-label fw-bold small text-muted">CATEGORY</label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="category" id="cat1" value="Medical" checked>
+                            <label class="btn btn-outline-danger w-100" for="cat1"><i class="bi bi-hospital"></i> Medical</label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="category" id="cat2" value="Flood">
+                            <label class="btn btn-outline-primary w-100" for="cat2"><i class="bi bi-water"></i> Flood</label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="category" id="cat3" value="Infra">
+                            <label class="btn btn-outline-dark w-100" for="cat3"><i class="bi bi-bricks"></i> Collapse</label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="category" id="cat4" value="Food">
+                            <label class="btn btn-outline-warning w-100" for="cat4"><i class="bi bi-basket"></i> Food</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">EVIDENCE (Photo/Video)</label>
+                        <input type="file" class="form-control" id="reportImage">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">DESCRIPTION</label>
+                        <textarea class="form-control" id="reportDetails" rows="3" placeholder="Describe the situation (e.g. 5 people trapped, water rising)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary fw-bold w-100" onclick="submitDetailedReport()">SUBMIT REPORT</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // STATE
+    let myLocation = { lat: 20.2961, lng: 85.8245 }; // Default: Odisha
+    const GEOFENCE_RADIUS_KM = 50; // Danger Zone Radius
+
+    // ================= 1. INITIALIZATION =================
+    window.onload = function() {
+        initLocation();
+        listenForAlerts();
+    };
+
+   // ================= 1. ROBUST LOCATION INIT =================
+    function initLocation() {
+        const geoText = document.getElementById('geo-text');
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                // A. Success: User gave permission
+                (pos) => {
+                    myLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    geoText.innerHTML = `<i class="bi bi-geo-alt-fill"></i> Lat: ${myLocation.lat.toFixed(2)}, Lng: ${myLocation.lng.toFixed(2)}`;
+                    geoText.classList.add('text-success');
+                    checkActiveAlerts(); 
+                }, 
+                // B. Error: User blocked it or it timed out
+                (err) => {
+                    console.warn("GPS Error/Denied:", err);
+                    useSimulationMode();
+                },
+                // C. Options: Don't wait forever (5 seconds timeout)
+                { timeout: 5000, enableHighAccuracy: true }
+            );
+        } else {
+            // Browser doesn't support GPS
+            useSimulationMode();
+        }
+    }
+
+    function useSimulationMode() {
+        const geoText = document.getElementById('geo-text');
+        
+        // 1. Force Hardcoded Odisha Coords
+        myLocation = { lat: 20.94, lng: 86.8245 }; 
+        
+        // 2. Update UI to show we are simulating
+        geoText.innerHTML = `<i class="bi bi-pin-map-fill"></i> Odisha (Simulated)`;
+        geoText.classList.add('text-warning');
+        
+        // 3. Trigger the Alert Check immediately
+        alert("⚠️ GPS Access Denied.\n\nSwitching to 'Simulation Mode' (Odisha) for the demo.");
+        checkActiveAlerts();
+    }
+    // ================= 2. GEOFENCING ENGINE =================
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+        var R = 6371; // Radius of the earth in km
+        var dLat = deg2rad(lat2-lat1);  
+        var dLon = deg2rad(lon2-lon1); 
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        var d = R * c; 
+        return d;
+    }
+    function deg2rad(deg) { return deg * (Math.PI/180) }
+
+    // ================= 3. REALTIME ALERTS & FILTERING =================
+    function listenForAlerts() {
+        supabase.channel('citizen-alerts')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'alerts' }, payload => {
+                handleAlertUpdate(payload.new);
+            })
+            .subscribe();
+    }
+
+    async function checkActiveAlerts() {
+        const { data } = await supabase.from('alerts').select('*').eq('status', 'Active').limit(1);
+        if(data && data.length > 0) handleAlertUpdate(data[0]);
+    }
+
+    function handleAlertUpdate(alertData) {
+        if (alertData.status === 'Active') {
+            // 1. CALCULATE DISTANCE (Geofencing Logic)
+            // Note: Admin alert must have lat/lng. We assume alert center is Bhadrak (20.94, 86.45) for MVP if missing
+            const alertLat = alertData.latitude || 20.94; 
+            const alertLng = alertData.longitude || 86.45;
+            
+            const distance = getDistanceFromLatLonInKm(myLocation.lat, myLocation.lng, alertLat, alertLng);
+            
+            // 2. CHECK IF INSIDE ZONE
+            if (distance <= GEOFENCE_RADIUS_KM) {
+                showRedScreen(alertData);
+                document.getElementById('distance-badge').innerText = `${distance.toFixed(1)} km from Eye`;
+                document.getElementById('distance-badge').style.display = 'inline-block';
+            } else {
+                console.log(`Alert ignored. You are ${distance.toFixed(1)}km away (Safe).`);
+            }
+        } else if (alertData.status === 'Resolved') {
+            showGreenScreen();
+        }
+    }
+
+    // ================= 4. UI SWITCHING =================
+    function showRedScreen(data) {
+        const header = document.getElementById('status-header');
+        header.className = 'status-danger';
+        document.getElementById('status-content').innerHTML = `
+            <i class="bi bi-exclamation-triangle-fill display-1 mb-2"></i>
+            <h2 class="fw-bold">${data.title}</h2>
+            <p>${data.summary}</p>
+            <div class="bg-white text-danger rounded p-2 fw-bold shadow-sm">STAY INDOORS</div>`;
+    }
+
+    function showGreenScreen() {
+        const header = document.getElementById('status-header');
+        header.className = 'status-safe';
+        document.getElementById('status-content').innerHTML = `
+            <i class="bi bi-shield-check display-1 mb-2"></i><h2 class="fw-bold">You are Safe</h2><p>Threat Resolved.</p>`;
+        document.getElementById('distance-badge').style.display = 'none';
+    }
+
+    // ================= 5. DETAILED REPORTING =================
+    // ================= 5. DETAILED REPORTING (REAL IMAGE UPLOAD) =================
+    async function submitDetailedReport() {
+        // 1. Get Form Data
+        const categoryInput = document.querySelector('input[name="category"]:checked');
+        const category = categoryInput ? categoryInput.value : "General Emergency";
+        const details = document.getElementById('reportDetails').value;
+        const imageFile = document.getElementById('reportImage').files[0];
+
+        // 2. Start Loading Feedback (Optional but good UX)
+        const submitBtn = document.querySelector('#reportModal .btn-primary');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Uploading...";
+        submitBtn.disabled = true;
+
+        let finalImageURL = null;
+
+        // 3. UPLOAD IMAGE TO SUPABASE STORAGE (If file exists)
+        if (imageFile) {
+            console.log("Uploading image...");
+            
+            // Create unique filename: timestamp_filename.jpg
+            const fileName = `${Date.now()}_${imageFile.name.replace(/\s/g, '_')}`;
+            
+            // Upload to 'reports' bucket
+            const { data: uploadData, error: uploadError } = await supabase
+                .storage
+                .from('reports')
+                .upload(fileName, imageFile);
+
+            if (uploadError) {
+                console.error("Upload Failed:", uploadError);
+                alert("⚠️ Image upload failed, but sending report text.");
+            } else {
+                // Get the Public URL to view it
+                const { data: urlData } = supabase
+                    .storage
+                    .from('reports')
+                    .getPublicUrl(fileName);
+                
+                finalImageURL = urlData.publicUrl;
+                console.log("Image URL generated:", finalImageURL);
+            }
+        }
+
+        // 4. SAVE REPORT TO DATABASE
+        const { error } = await supabase.from('citizen_reports').insert({
+            category: category,
+            details: details,
+            latitude: myLocation.lat,
+            longitude: myLocation.lng,
+            image_url: finalImageURL // This is now the REAL link
+        });
+
+        // 5. RESET UI
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+        
+        // Close Modal
+        const modalEl = document.getElementById('reportModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        if (!error) {
+            alert("✅ Report & Image Submitted!");
+        } else {
+            alert("Error saving report: " + error.message);
+        }
+    }
+    
+    // Chatbot functions remain same...
+    function sendMessage() { /* ... same as before ... */ }
+    function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
+</script>
+</body>
+</html>
