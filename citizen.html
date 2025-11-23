@@ -105,7 +105,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-    // ================= CONFIGURATION =================
+    //connecting with database
     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
     
@@ -113,12 +113,12 @@
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // STATE
+    
     let myLocation = { lat: 20.2961, lng: 85.8245 }; // Default
     const GEOFENCE_RADIUS_KM = 50;
     let currentAlertData = null; 
 
-    // ================= 1. INIT =================
+   
     window.onload = function() {
         initLocation();
         listenForAlerts();
@@ -151,7 +151,7 @@
         checkActiveAlerts();
     }
 
-    // ================= 2. REALTIME ALERTS (FIXED) =================
+    //alerts at real time
     function listenForAlerts() {
         // Listen for ANY update to alerts
         supabase.channel('citizen-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
@@ -172,7 +172,7 @@
 
         let foundDanger = false;
 
-        // Loop through ALL active alerts
+        // active alerts
         for (let alert of data) {
             const alertLat = alert.latitude || 20.94; 
             const alertLng = alert.longitude || 86.45;
@@ -183,21 +183,21 @@
             console.log(`Checking Alert: ${alert.title} | Distance: ${distance.toFixed(1)}km | Radius: ${radius}km`);
 
             if (distance <= radius) {
-                // Found a relevant alert!
+                
                 currentAlertData = alert;
                 showRedScreen(alert, distance);
                 foundDanger = true;
-                break; // Stop looking, we found the danger
+                break; 
             }
         }
 
-        // If we looped through all and found nothing, but screen is red -> reset to green
+       
         if (!foundDanger && document.getElementById('status-header').classList.contains('status-danger')) {
             showGreenScreen();
         }
     }
 
-    // ================= 3. AI AGENT LOGIC (GEMINI) =================
+    // AI chatbot
     async function sendMessage() {
         const inputField = document.getElementById('user-input');
         const userText = inputField.value.trim();
@@ -254,7 +254,7 @@
     function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
     function addBotMessage(text) { addMessage(text, 'bot-msg'); }
 
-    // ================= 4. HELPERS (Geofence, UI, Reports) =================
+    // helper
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
         var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
         var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
@@ -269,7 +269,7 @@
         document.getElementById('distance-badge').innerText = `Impact Zone (${distance.toFixed(1)}km)`;
         document.getElementById('distance-badge').style.display = 'inline-block';
         
-        // Only update chat if it's a new alert
+        // update of chats
         if (document.querySelector('.bot-msg').innerText.includes('Hello')) {
              addBotMessage(`⚠️ <strong>ALERT UPDATE:</strong> ${data.title} is active near you. I have updated my safety protocols.`);
         }
@@ -313,3 +313,4 @@
 </script>
 </body>
 </html>
+
