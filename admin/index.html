@@ -3,30 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AapdaSetu | Mission Control</title>
+    <title>AapdaSetu | Admin Command Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body { background-color: #f4f6f9; overflow-x: hidden; }
         
         /* SIDEBAR */
-        .sidebar { min-height: 100vh; background: #2c3e50; color: white; padding-top: 20px; position: fixed; width: 16.66%; }
-        .sidebar a { color: #b0c4de; text-decoration: none; padding: 15px 20px; display: flex; align-items: center; transition: 0.3s; border-left: 4px solid transparent; }
-        .sidebar a:hover { background: #34495e; color: #fff; }
-        .sidebar a.active { background: #34495e; color: #fff; border-left: 4px solid #0dcaf0; background: linear-gradient(90deg, rgba(52,73,94,1) 0%, rgba(44,62,80,0) 100%); }
-        .main-content { margin-left: 16.66%; padding: 20px; }
-
-        /* COMPONENTS */
-        .map-container { height: 55vh; width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; padding-top: 20px; }
+        .sidebar a { color: #b0c4de; text-decoration: none; padding: 12px 20px; display: block; transition: 0.3s; border-left: 4px solid transparent; }
+        .sidebar a:hover, .sidebar a.active { background: #34495e; color: #fff; border-left: 4px solid #3498db; }
+        
+        /* CARDS & MAP */
+        .map-container { height: 55vh; width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .stat-card { border: none; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
+        
+        /* RIGHT PANEL SCROLL */
         .panel-scroll { max-height: 65vh; overflow-y: auto; }
         
-        /* PRIORITY REPORTS STYLING */
-        .report-card-critical { border-left: 5px solid #dc3545; background-color: #fff5f5; order: -1; } 
-        .report-card-normal { border-left: 5px solid #6c757d; order: 10; }
-        .blinking { animation: blinker 1.5s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0.5; } }
-
+        /* PRIORITY STYLES */
+        .report-card-critical { border-left: 5px solid #dc3545; background-color: #fff5f5; }
+        .report-card-normal { border-left: 5px solid #6c757d; }
+        
         /* TABS */
         .nav-tabs .nav-link { color: #495057; font-weight: 600; }
         .nav-tabs .nav-link.active { color: #000; border-top: 3px solid #0d6efd; }
@@ -37,36 +35,39 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-2 sidebar d-none d-md-block">
-            <h4 class="text-center mb-5 fw-bold pt-2">🛑 AapdaSetu</h4>
-            <small class="text-muted text-uppercase fw-bold ms-3" style="font-size: 0.7rem;">Operations</small>
-            <a href="index.html" class="active"><i class="bi bi-crosshair me-2"></i> Mission Control</a>
-            <a href="resource_allocation.html"><i class="bi bi-box-seam me-2"></i> Resource Alloc.</a>
-            <a href="analytics.html"><i class="bi bi-bar-chart me-2"></i> Analytics</a>
-            <div class="mt-5 pt-5"><a href="../index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a></div>
+            <h4 class="text-center mb-4 fw-bold">🛑 AapdaSetu</h4>
+            <a href="#" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="/admin/analytics.html"><i class="bi bi-clipboard-check me-2"></i> Mission Control</a>
+            <a href="/admin/resource_allocation.html"><i class="bi bi-people me-2"></i> Resource Alloc.</a>
+            <hr>
+            <a href="index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
         </div>
 
-        <div class="col-md-10 main-content">
+        <div class="col-md-10 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold text-dark">Mission Control Center</h3>
-                    <p class="text-muted mb-0">System Status: <strong class="text-success">Online & Monitoring</strong></p>
+                    <h2 class="fw-bold text-dark">Disaster Response Console</h2>
+                    <p class="text-muted mb-0">Region: <strong class="text-primary">Odisha Coastal Zone</strong></p>
                 </div>
                 <button class="btn btn-warning fw-bold shadow-sm" onclick="simulateScraperInput()">
-                    <i class="bi bi-robot"></i> RUN AI SCRAPER (Random)
+                    <i class="bi bi-robot"></i> RUN AI SCRAPER
                 </button>
             </div>
 
             <div class="row g-4">
                 <div class="col-lg-7">
-                    <div class="card stat-card p-1 mb-3">
-                        <div class="card-body p-0">
-                            <div id="googleMap" class="map-container"></div>
+                    <div class="card stat-card p-2 mb-3">
+                        <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between">
+                            <span><i class="bi bi-geo-alt-fill text-primary"></i> Live Incident Map</span>
+                            <span class="badge bg-danger" id="active-alerts-count-badge">0 Active Alerts</span>
                         </div>
+                        <div id="googleMap" class="map-container"></div>
                     </div>
+
                     <div class="card stat-card">
-                        <div class="card-header bg-white fw-bold border-0"><i class="bi bi-broadcast text-danger"></i> Live Public Broadcasts</div>
+                        <div class="card-header bg-success text-white fw-bold"><i class="bi bi-broadcast"></i> LIVE BROADCASTS (Public)</div>
                         <div class="card-body" id="active-broadcasts-container">
-                            <p class="text-muted small text-center my-3">No active disasters.</p>
+                            <p class="text-muted small">No active disasters.</p>
                         </div>
                     </div>
                 </div>
@@ -74,267 +75,264 @@
                 <div class="col-lg-5">
                     <div class="card stat-card h-100">
                         <div class="card-header bg-light p-0">
-                            <ul class="nav nav-tabs nav-fill" role="tablist">
-                                <li class="nav-item"><button class="nav-link active py-3" data-bs-toggle="tab" data-bs-target="#ai-panel">
-                                    <i class="bi bi-stars text-warning"></i> AI Alerts</button></li>
-                                <li class="nav-item"><button class="nav-link py-3" data-bs-toggle="tab" data-bs-target="#reports-panel">
-                                    <i class="bi bi-person-exclamation text-danger"></i> Citizen SOS</button></li>
+                            <ul class="nav nav-tabs nav-fill" id="adminTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active py-3" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-panel" type="button">
+                                        <i class="bi bi-stars text-warning"></i> AI Alerts
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link py-3" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports-panel" type="button">
+                                        <i class="bi bi-person-exclamation text-danger"></i> Citizen SOS
+                                    </button>
+                                </li>
                             </ul>
                         </div>
+
                         <div class="card-body panel-scroll tab-content">
                             
                             <div class="tab-pane fade show active" id="ai-panel">
                                 <div id="incoming-alerts">
                                     <div class="text-center text-muted mt-5" id="ai-empty-state">
-                                        <p>AI Scraper is monitoring sources...</p>
+                                        <i class="bi bi-shield-check display-1 opacity-25"></i>
+                                        <p class="mt-3">AI Scraper is monitoring sources...</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="tab-pane fade" id="reports-panel">
                                 <div class="d-flex justify-content-between mb-3 align-items-center">
-                                    <small class="text-muted fw-bold">PRIORITY SORTED (RED ZONES FIRST)</small>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="fetchCitizenReports()"><i class="bi bi-arrow-clockwise"></i></button>
+                                    <small class="text-muted fw-bold">PRIORITY SORTED</small>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="fetchCitizenReports()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
                                 </div>
-                                <div id="citizen-reports-feed" class="d-flex flex-column">
-                                    <div class="text-center text-muted mt-5"><p>Loading reports...</p></div>
+                                <div id="citizen-reports-feed">
+                                    <div class="text-center text-muted mt-5">
+                                        <p>Loading reports...</p>
+                                    </div>
                                 </div>
                             </div>
 
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> 
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMap&loading=async" async defer></script>
 
 <script>
-    // ================= CONFIGURATION =================
     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // FIX 1: Renamed variable to avoid conflict
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let map;
     let activeAlertsCache = []; 
-    let mapOverlays = []; // Store circles/markers to clear them properly
 
     // ================= 1. INIT =================
-    async function initMap() {
-        const indiaCenter = { lat: 22.3511, lng: 78.6677 }; 
+    // FIX 2: Attach initMap to window so Google Script can find it
+    window.initMap = function() {
+        console.log("Map Initializing...");
+        const center = { lat: 20.2961, lng: 85.8245 };
         map = new google.maps.Map(document.getElementById("googleMap"), {
-            zoom: 5, 
-            center: indiaCenter, 
-            mapTypeId: 'terrain',
+            zoom: 7, center: center, mapTypeId: 'terrain',
             styles: [{ elementType: "geometry", stylers: [{ color: "#242f3e" }] }]
         });
         
         setupRealtimeListeners();
-        await fetchActiveBroadcasts(); // Load Red Zones first
+        fetchActiveBroadcasts();
         fetchPendingAlerts();
         fetchCitizenReports(); 
     }
 
+    // ================= 2. REALTIME & DATA =================
     function setupRealtimeListeners() {
-        // Listen for ANY change to alerts
-        supabase.channel('admin-global').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, async payload => {
-            // If New Alert comes (from n8n), show it in Yellow List
+        supabaseClient.channel('admin-global').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
             if(payload.new.status === 'Pending') createPendingCard(payload.new);
-            
-            // If Status changes to Active, Redraw the Map
             if(payload.new.status === 'Active' || payload.new.status === 'Resolved') {
-                await fetchActiveBroadcasts(); 
-                fetchCitizenReports(); 
+                fetchActiveBroadcasts();
+                setTimeout(fetchCitizenReports, 1000); 
             }
         }).subscribe();
 
-        // Listen for Citizen Reports
-        supabase.channel('admin-reports-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'citizen_reports' }, payload => {
+        supabaseClient.channel('admin-reports-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'citizen_reports' }, payload => {
             addReportMarker(payload.new);
-            fetchCitizenReports();
+            fetchCitizenReports(); 
         }).subscribe();
     }
 
-    // ================= 2. MAP & BROADCAST LOGIC (THE FIX) =================
-    async function fetchActiveBroadcasts() {
-        const { data } = await supabase.from('alerts').select('*').eq('status', 'Active');
-        activeAlertsCache = data || []; 
-        
-        const container = document.getElementById('active-broadcasts-container');
-        container.innerHTML = '';
-        
-        // 1. CLEAR OLD MAP OBJECTS
-        mapOverlays.forEach(obj => obj.setMap(null));
-        mapOverlays = [];
-
-        if(!data || data.length === 0) { 
-            container.innerHTML = '<p class="text-muted small text-center">No active disasters.</p>'; 
-            return; 
-        }
-
-        // 2. BOUNDS OBJECT (To Auto-Zoom the Map)
-        const bounds = new google.maps.LatLngBounds();
-
-        data.forEach(alert => {
-            // USE DB VALUES (Fallback to Odisha only if DB is empty)
-            const alertCenter = { 
-                lat: alert.latitude || 20.94, 
-                lng: alert.longitude || 86.45 
-            };
-
-            // A. Draw Red Circle (Radius from DB)
-            const circle = new google.maps.Circle({ 
-                strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 2, 
-                fillColor: "#FF0000", fillOpacity: 0.35, map, 
-                center: alertCenter, 
-                radius: (alert.radius_km || 50) * 1000 // Convert km to meters
-            });
-            mapOverlays.push(circle);
-            
-            // B. Add Invisible Marker for Hover Title
-            const labelMarker = new google.maps.Marker({
-                position: alertCenter,
-                map: map,
-                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0 }, // Invisible icon
-                title: `ACTIVE ZONE: ${alert.title}` // Hover text
-            });
-            mapOverlays.push(labelMarker);
-
-            // Expand map view to include this disaster
-            bounds.extend(alertCenter);
-
-            // C. Update Sidebar List
-            container.innerHTML += `
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
-                    <div>
-                        <strong class="text-danger">● LIVE:</strong> ${alert.title}
-                        <br><small class="text-muted">Lat: ${alertCenter.lat.toFixed(2)}, Lng: ${alertCenter.lng.toFixed(2)}</small>
-                    </div>
-                    <button class="btn btn-outline-success btn-sm" onclick="resolveAlert(${alert.id})">✅ End</button>
-                </div>`;
-        });
-
-        // 3. AUTO-ZOOM MAP TO FIT ALL ALERTS
-        if (data.length > 0) {
-            map.fitBounds(bounds);
-            // If only 1 alert, zoom out slightly so it doesn't look too close
-            if(data.length === 1) {
-                const listener = google.maps.event.addListener(map, "idle", () => { 
-                    if (map.getZoom() > 8) map.setZoom(8); 
-                    google.maps.event.removeListener(listener); 
-                });
-            }
-        }
-    }
-
-    // ================= 3. ACTIONS (FIXED) =================
-    
-    // 🔥 CRITICAL FIX: REMOVED HARDCODED LAT/LNG
-    // This function now ONLY changes the status. It trusts the Lat/Lng provided by n8n/Simulation.
-    async function broadcast(id) {
-        console.log("Broadcasting ID:", id);
-        
-        const { error } = await supabase
-            .from('alerts')
-            .update({ status: 'Active' }) // <--- LOOK! No lat/lng overwrite here.
-            .eq('id', id);
-
-        if(error) alert("Error: " + error.message);
-        else document.getElementById(`alert-${id}`).remove();
-    }
-
-    async function resolveAlert(id) {
-        if(confirm("End alert? This will turn the zone Green.")) { 
-            await supabase.from('alerts').update({ status: 'Resolved' }).eq('id', id); 
-            fetchActiveBroadcasts();
-        } 
-    }
-
-    // RANDOMIZED SIMULATOR (To test Multiple Regions)
-    async function simulateScraperInput() {
-        const scenarios = [
-            { title: "Cyclone Dana (Odisha)", lat: 20.94, lng: 86.45, summary: "Deep depression over Bay of Bengal." },
-            { title: "Mumbai Flash Flood", lat: 19.0760, lng: 72.8777, summary: "Heavy rainfall causing urban flooding." },
-            { title: "Delhi Smog Emergency", lat: 28.6139, lng: 77.2090, summary: "AQI crossed 500. Visibility near zero." },
-            { title: "Chennai Cyclone", lat: 13.0827, lng: 80.2707, summary: "Cyclonic storm approaching coast." }
-        ];
-        
-        const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-
-        await supabase.from('alerts').insert({
-            title: randomScenario.title,
-            severity: "Critical",
-            summary: randomScenario.summary,
-            status: "Pending",
-            latitude: randomScenario.lat,
-            longitude: randomScenario.lng,
-            radius_km: 50,
-            safety_steps: ["Stay Indoors", "Charge Battery"]
-        });
-        
-        // Auto-switch tab to show the new alert
-        const triggerEl = document.querySelector('button[data-bs-target="#ai-panel"]');
-        bootstrap.Tab.getInstance(triggerEl).show();
-    }
-
-    // ... [Rest of the Helper Functions] ...
-    // (fetchPendingAlerts, createPendingCard, fetchCitizenReports, addReportMarker, getDistanceKm, focusMap)
-    // Paste them here exactly as they were in previous versions.
-    
-    async function fetchPendingAlerts() { const { data } = await supabase.from('alerts').select('*').eq('status', 'Pending'); if(data) data.forEach(createPendingCard); }
-    function createPendingCard(data) {
-        if(document.getElementById(`alert-${data.id}`)) return;
-        document.getElementById('ai-empty-state').style.display = 'none';
-        const html = `<div class="card mb-3 border-warning shadow-sm" id="alert-${data.id}"><div class="card-body"><h6 class="fw-bold text-danger">⚠️ ${data.title}</h6><div class="bg-light p-2 rounded mt-2 mb-2"><small class="text-secondary fw-bold">AI ANALYSIS:</small><br><span class="small">${data.summary}</span></div><button class="btn btn-danger btn-sm fw-bold w-100" onclick="broadcast(${data.id})">VERIFY & BROADCAST 📡</button></div></div>`;
-        document.getElementById('incoming-alerts').insertAdjacentHTML('afterbegin', html);
-    }
-
+    // ================= 3. CITIZEN REPORTS LOGIC =================
     async function fetchCitizenReports() {
-        const { data: reports } = await supabase
-            .from('citizen_reports')
-            .select('*')
-            .eq('status', 'Open') // <--- THIS IS THE CRITICAL FILTER
-            .order('created_at', { ascending: false })
-            .limit(50);
-            
+        const { data: reports } = await supabaseClient.from('citizen_reports').select('*').order('created_at', { ascending: false }).limit(50);
         const container = document.getElementById('citizen-reports-feed');
         container.innerHTML = '';
 
-        if(!reports || reports.length === 0) { 
-            container.innerHTML = '<div class="text-center mt-5 text-muted"><i class="bi bi-check-circle text-success display-4"></i><br>All active incidents assigned.</div>'; 
-            return; 
+        if(!reports || reports.length === 0) {
+            container.innerHTML = '<div class="text-center mt-5 text-muted">No reports yet.</div>';
+            return;
         }
+
         const processedReports = reports.map(report => {
             let isCritical = false;
+            let matchedAlert = null;
+
             activeAlertsCache.forEach(alert => {
                 const d = getDistanceKm(report.latitude, report.longitude, alert.latitude || 20.94, alert.longitude || 86.45);
-                if(d <= (alert.radius_km || 50)) isCritical = true;
+                if(d <= (alert.radius_km || 50)) {
+                    isCritical = true;
+                    matchedAlert = alert.title;
+                }
             });
-            return { ...report, isCritical };
+            return { ...report, isCritical, matchedAlert };
         });
+
         processedReports.sort((a, b) => (a.isCritical === b.isCritical) ? 0 : a.isCritical ? -1 : 1);
 
         processedReports.forEach(r => {
-            const badge = r.isCritical ? `<span class="badge bg-danger blinking">🔥 CRITICAL ZONE</span>` : `<span class="badge bg-secondary">General</span>`;
+            const badge = r.isCritical 
+                ? `<span class="badge bg-danger blinking">🔥 CRITICAL ZONE: ${r.matchedAlert}</span>` 
+                : `<span class="badge bg-secondary">General Report</span>`;
+            
             const borderClass = r.isCritical ? 'report-card-critical' : 'report-card-normal';
-            container.innerHTML += `<div class="card mb-2 shadow-sm ${borderClass}"><div class="card-body p-2"><div class="d-flex justify-content-between"><strong class="text-dark">${r.category || 'Unknown'}</strong><small class="text-muted">${new Date(r.created_at).toLocaleTimeString()}</small></div><div class="mb-1">${badge}</div><p class="small mb-1 text-secondary">${r.details || 'No details.'}</p><div class="d-flex gap-2 mt-2"><button class="btn btn-sm btn-outline-primary w-100" onclick="focusMap(${r.latitude}, ${r.longitude})">📍 Locate</button>${r.image_url ? `<a href="${r.image_url}" target="_blank" class="btn btn-sm btn-outline-secondary w-100">📷 Evidence</a>` : ''}</div></div></div>`;
+
+            const html = `
+                <div class="card mb-2 shadow-sm ${borderClass}">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between">
+                            <strong class="text-dark">${r.category || 'Unknown'}</strong>
+                            <small class="text-muted">${new Date(r.created_at).toLocaleTimeString()}</small>
+                        </div>
+                        <div class="mb-1">${badge}</div>
+                        <p class="small mb-1 text-secondary">${r.details || 'No details.'}</p>
+                        
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-sm btn-outline-primary w-50" onclick="focusMap(${r.latitude}, ${r.longitude})">📍 Locate</button>
+                            ${r.image_url ? `<a href="${r.image_url}" target="_blank" class="btn btn-sm btn-outline-secondary w-50">📷 Evidence</a>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            container.innerHTML += html;
             addReportMarker(r); 
         });
     }
 
-    function getDistanceKm(lat1, lon1, lat2, lon2) { var R = 6371; var dLat = (lat2-lat1)*(Math.PI/180); var dLon = (lon2-lon1)*(Math.PI/180); var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180))*Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2)*Math.sin(dLon/2); return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); }
-    function focusMap(lat, lng) { map.panTo({ lat, lng }); map.setZoom(12); }
+    function getDistanceKm(lat1, lon1, lat2, lon2) {
+        var R = 6371; 
+        var dLat = (lat2-lat1) * (Math.PI/180);
+        var dLon = (lon2-lon1) * (Math.PI/180);
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180)) * Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        return R * c;
+    }
+
+    function focusMap(lat, lng) {
+        if(map) {
+            map.panTo({ lat, lng });
+            map.setZoom(12);
+        }
+    }
+
+    // ================= 4. ALERTS & BROADCAST =================
+    async function fetchActiveBroadcasts() {
+        const { data } = await supabaseClient.from('alerts').select('*').eq('status', 'Active');
+        
+        activeAlertsCache = data || [];
+        const count = data ? data.length : 0;
+        document.getElementById('active-alerts-count-badge').innerText = `${count} Active Alerts`;
+
+        const container = document.getElementById('active-broadcasts-container');
+        container.innerHTML = '';
+        
+        if(count === 0) {
+            container.innerHTML = '<p class="text-muted small">No active disasters.</p>';
+            return;
+        }
+
+        data.forEach(alert => {
+            if(map) {
+                new google.maps.Circle({
+                    strokeColor: "#FF0000", strokeOpacity: 0.8, strokeWeight: 2,
+                    fillColor: "#FF0000", fillOpacity: 0.35, map,
+                    center: { lat: alert.latitude || 20.94, lng: alert.longitude || 86.45 },
+                    radius: (alert.radius_km || 50) * 1000,
+                });
+            }
+
+            container.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                    <div><strong class="text-danger">● LIVE:</strong> ${alert.title}</div>
+                    <button class="btn btn-outline-success btn-sm" onclick="resolveAlert(${alert.id})">✅ Resolve</button>
+                </div>`;
+        });
+    }
+
+    async function fetchPendingAlerts() {
+        const { data } = await supabaseClient.from('alerts').select('*').eq('status', 'Pending');
+        if(data) data.forEach(createPendingCard);
+    }
+
+    function createPendingCard(data) {
+        if(document.getElementById(`alert-${data.id}`)) return;
+        document.getElementById('ai-empty-state').style.display = 'none';
+        
+        const html = `
+            <div class="card mb-3 border-warning shadow-sm" id="alert-${data.id}">
+                <div class="card-body">
+                    <h6 class="fw-bold text-danger">⚠️ ${data.title}</h6>
+                    <div class="bg-light p-2 rounded mt-2 mb-2">
+                        <small class="text-secondary fw-bold">AI ANALYSIS:</small><br>
+                        <span class="small">${data.summary}</span>
+                    </div>
+                    <button class="btn btn-danger btn-sm fw-bold w-100" onclick="broadcast(${data.id})">VERIFY & BROADCAST 📡</button>
+                </div>
+            </div>`;
+        document.getElementById('incoming-alerts').insertAdjacentHTML('afterbegin', html);
+    }
+
+    // ================= 5. ACTIONS =================
+    async function broadcast(id) {
+        await supabaseClient.from('alerts').update({ status: 'Active', latitude: 20.94, longitude: 86.45, radius_km: 50 }).eq('id', id);
+        document.getElementById(`alert-${id}`).remove();
+    }
+    
+    async function resolveAlert(id) {
+        if(confirm("End alert?")) {
+            await supabaseClient.from('alerts').update({ status: 'Resolved' }).eq('id', id);
+            location.reload(); 
+        }
+    }
+    
+    async function simulateScraperInput() {
+        await supabaseClient.from('alerts').insert({
+            title: "Cyclone Dana (AI Detected)", severity: "Critical",
+            summary: "Satellite imagery confirms deep depression.", status: "Pending"
+        });
+        const triggerEl = document.querySelector('#ai-tab');
+        bootstrap.Tab.getInstance(triggerEl).show();
+    }
+
     function addReportMarker(data) {
-        let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+        if(!map) return;
+        let iconUrl = "http://maps.google.com/mapfiles/ms/icons/red-dot.png"; // Default
         if(data.category === 'Flood') iconUrl = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png";
-        const marker = new google.maps.Marker({ position: { lat: data.latitude, lng: data.longitude }, map: map, animation: google.maps.Animation.DROP, title: data.category, icon: iconUrl });
+        
+        const marker = new google.maps.Marker({
+            position: { lat: data.latitude, lng: data.longitude },
+            map: map,
+            animation: google.maps.Animation.DROP,
+            title: data.category,
+            icon: iconUrl
+        });
         const info = new google.maps.InfoWindow({ content: `<strong>${data.category}</strong><br>${data.details}` });
         marker.addListener("click", () => info.open(map, marker));
     }
 </script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMap&loading=async" async defer></script>
+
 </body>
 </html>
