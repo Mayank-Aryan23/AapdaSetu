@@ -17,7 +17,6 @@
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(239, 71, 58, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0); } }
         
         /* CHAT & BUTTONS */
-        .action-btn { border-radius: 12px; padding: 15px; border: 1px solid #eee; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: left; width: 100%; display: flex; align-items: center; }
         .chat-interface { background: #f8f9fa; border-radius: 15px; height: 350px; display: flex; flex-direction: column; }
         .chat-history { flex-grow: 1; overflow-y: auto; padding: 15px; }
         
@@ -105,20 +104,22 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-    //connecting with database
+    // ================= CONFIGURATION =================
     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
     
+    // Note: In production, do not expose API keys client-side. This is for MVP/Demo only.
     const GEMINI_API_KEY = 'AIzaSyDzThTY9eY89Aa78e4chAL2DmImG8ReQDg'; 
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // FIX 1: Renamed variable from 'supabase' to 'supabaseClient' to avoid conflict with the library namespace
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    
+    // STATE
     let myLocation = { lat: 20.2961, lng: 85.8245 }; // Default
     const GEOFENCE_RADIUS_KM = 50;
     let currentAlertData = null; 
 
-   
+    // ================= 1. INIT =================
     window.onload = function() {
         initLocation();
         listenForAlerts();
@@ -151,18 +152,18 @@
         checkActiveAlerts();
     }
 
-    //alerts at real time
+    // ================= 2. REALTIME ALERTS =================
     function listenForAlerts() {
-        // Listen for ANY update to alerts
-        supabase.channel('citizen-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
+        // Updated to use supabaseClient
+        supabaseClient.channel('citizen-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
             // Re-check everything whenever anything changes
             checkActiveAlerts();
         }).subscribe();
     }
 
     async function checkActiveAlerts() {
-        // FIX: Fetch ALL active alerts, not just limit(1)
-        const { data } = await supabase.from('alerts').select('*').eq('status', 'Active');
+        // Updated to use supabaseClient
+        const { data } = await supabaseClient.from('alerts').select('*').eq('status', 'Active');
         
         if (!data || data.length === 0) {
             if (currentAlertData) showGreenScreen(); // Clear alert if it was resolved
@@ -172,7 +173,7 @@
 
         let foundDanger = false;
 
-        // active alerts
+        // Loop through ALL active alerts
         for (let alert of data) {
             const alertLat = alert.latitude || 20.94; 
             const alertLng = alert.longitude || 86.45;
@@ -183,21 +184,21 @@
             console.log(`Checking Alert: ${alert.title} | Distance: ${distance.toFixed(1)}km | Radius: ${radius}km`);
 
             if (distance <= radius) {
-                
+                // Found a relevant alert!
                 currentAlertData = alert;
                 showRedScreen(alert, distance);
                 foundDanger = true;
-                break; 
+                break; // Stop looking, we found the danger
             }
         }
 
-       
+        // If we looped through all and found nothing, but screen is red -> reset to green
         if (!foundDanger && document.getElementById('status-header').classList.contains('status-danger')) {
             showGreenScreen();
         }
     }
 
-    // AI chatbot
+    // ================= 3. AI AGENT LOGIC (GEMINI) =================
     async function sendMessage() {
         const inputField = document.getElementById('user-input');
         const userText = inputField.value.trim();
@@ -254,10 +255,11 @@
     function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
     function addBotMessage(text) { addMessage(text, 'bot-msg'); }
 
-    // helper
+    // ================= 4. HELPERS (Geofence, UI, Reports) =================
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
         var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
-        var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+        // FIX 2: Corrected Haversine formula (was using cos(lat1) twice)
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
     function deg2rad(deg) { return deg * (Math.PI/180) }
@@ -269,7 +271,7 @@
         document.getElementById('distance-badge').innerText = `Impact Zone (${distance.toFixed(1)}km)`;
         document.getElementById('distance-badge').style.display = 'inline-block';
         
-        // update of chats
+        // Only update chat if it's a new alert
         if (document.querySelector('.bot-msg').innerText.includes('Hello')) {
              addBotMessage(`⚠️ <strong>ALERT UPDATE:</strong> ${data.title} is active near you. I have updated my safety protocols.`);
         }
@@ -292,14 +294,17 @@
         let finalImageURL = null;
         if (imageFile) {
             const fileName = `${Date.now()}_${imageFile.name.replace(/\s/g, '_')}`;
-            const { error: uploadError } = await supabase.storage.from('reports').upload(fileName, imageFile);
+            // Updated to use supabaseClient
+            const { error: uploadError } = await supabaseClient.storage.from('reports').upload(fileName, imageFile);
             if (!uploadError) {
-                const { data: urlData } = supabase.storage.from('reports').getPublicUrl(fileName);
+                // Updated to use supabaseClient
+                const { data: urlData } = supabaseClient.storage.from('reports').getPublicUrl(fileName);
                 finalImageURL = urlData.publicUrl;
             }
         }
 
-        const { error } = await supabase.from('citizen_reports').insert({
+        // Updated to use supabaseClient
+        const { error } = await supabaseClient.from('citizen_reports').insert({
             category: category, details: details, latitude: myLocation.lat, longitude: myLocation.lng, image_url: finalImageURL
         });
 
@@ -313,4 +318,3 @@
 </script>
 </body>
 </html>
-
