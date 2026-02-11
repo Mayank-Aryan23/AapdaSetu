@@ -66,29 +66,31 @@
     // ================= CONFIGURATION =================
     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // FIX: Renamed variable to avoid conflict
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let timeChartInstance = null;
     let catChartInstance = null;
 
     window.onload = function() {
-        loadAnalytics(); // Initial Load
-        setupLiveAnalytics(); // <--- Add this!
+        loadAnalytics(); 
+        setupLiveAnalytics(); 
     };
 
     function setupLiveAnalytics() {
-        // Update charts whenever a report is Assigned or Resolved
-        supabase.channel('analytics-live')
+        // Updated to use supabaseClient
+        supabaseClient.channel('analytics-live')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'citizen_reports' }, payload => {
                 console.log("New Analytics Data!", payload);
-                loadAnalytics(); // Re-draw charts instantly
+                loadAnalytics(); 
             })
             .subscribe();
     }
 
     async function loadAnalytics() {
-        // 1. FETCH REAL DATA
-        const { data: reports, error } = await supabase
+        // 1. FETCH REAL DATA (Updated to use supabaseClient)
+        const { data: reports, error } = await supabaseClient
             .from('citizen_reports')
             .select('*')
             .order('created_at', { ascending: true });
@@ -97,19 +99,15 @@
 
         // 2. PROCESS DATA FOR CATEGORY CHART
         const categories = {};
-        let resolvedCount = 0;
         
         reports.forEach(r => {
             // Count Categories
             categories[r.category] = (categories[r.category] || 0) + 1;
-            // Count Resolved/Assigned
-            if (r.status === 'Assigned' || r.status === 'Resolved') resolvedCount++;
         });
 
         document.getElementById('total-resolved').innerText = reports.length;
 
         // 3. PROCESS DATA FOR RESPONSE TIME CHART
-        // Only look at reports that have been Assigned (have a deployment_time)
         const responseLabels = [];
         const responseData = [];
 
