@@ -2,23 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AapdaSetu | Logistics</title>
+    <title>AapdaSetu | Logistics Command</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
-        body { background-color: #f4f6f9; overflow-x: hidden; }
-        .sidebar { min-height: 100vh; background: #2c3e50; color: white; padding-top: 20px; position: fixed; width: 16.66%; }
+        body { background-color: #f4f6f9; overflow-x: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Sidebar Styling */
+        .sidebar { min-height: 100vh; background: #1a252f; color: white; padding-top: 20px; position: fixed; width: 16.66%; z-index: 100; }
         .sidebar a { color: #b0c4de; text-decoration: none; padding: 15px 20px; display: flex; align-items: center; transition: 0.3s; border-left: 4px solid transparent; }
         .sidebar a:hover { background: #34495e; color: #fff; }
-        .sidebar a.active { background: #34495e; color: #fff; border-left: 4px solid #0dcaf0; background: linear-gradient(90deg, rgba(52,73,94,1) 0%, rgba(44,62,80,0) 100%); }
-        .main-content { margin-left: 16.66%; padding: 20px; }
-        .stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .dot-Available { background-color: #198754; box-shadow: 0 0 5px #198754; }
-        .dot-Deployed { background-color: #dc3545; box-shadow: 0 0 5px #dc3545; }
+        .sidebar a.active { background: #2c3e50; color: #fff; border-left: 4px solid #0dcaf0; background: linear-gradient(90deg, rgba(44,62,80,1) 0%, rgba(26,37,47,0) 100%); }
+        
+        /* Main Content */
+        .main-content { margin-left: 16.66%; padding: 30px; }
+        
+        /* Cards & Indicators */
+        .stat-card { border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .dot-Available { background-color: #198754; box-shadow: 0 0 8px #198754; }
+        .dot-Deployed { background-color: #dc3545; box-shadow: 0 0 8px #dc3545; }
         .dot-Maintenance { background-color: #ffc107; }
-        .ai-suggestion { border-left: 4px solid #6610f2; background-color: #f3f0ff; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* AI Section */
+        .ai-suggestion { border-left: 5px solid #6610f2; background-color: #fff; animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
@@ -26,49 +37,67 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-2 sidebar d-none d-md-block">
-            <h4 class="text-center mb-5 fw-bold pt-2">🛑 AapdaSetu</h4>
-            <small class="text-muted text-uppercase fw-bold ms-3" style="font-size: 0.7rem;">Operations</small>
+            <h4 class="text-center mb-5 fw-bold pt-3"><i class="bi bi-shield-shaded me-2"></i>AapdaSetu</h4>
+            <small class="text-muted text-uppercase fw-bold ms-3" style="font-size: 0.7rem; letter-spacing: 1px;">Command Center</small>
             <a href="index.html"><i class="bi bi-crosshair me-2"></i> Mission Control</a>
-            <a href="resource_allocation.html" class="active"><i class="bi bi-box-seam me-2"></i> Resource Alloc.</a>
+            <a href="resource_allocation.html" class="active"><i class="bi bi-box-seam me-2"></i> Logistics & Orders</a>
             <a href="analytics.html"><i class="bi bi-bar-chart me-2"></i> Analytics</a>
-            <div class="mt-5 pt-5"><a href="../index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a></div>
+            <div class="mt-5 pt-5 border-top border-secondary mx-3">
+                <a href="../index.html" class="text-danger ps-0"><i class="bi bi-box-arrow-left me-2"></i> Secure Logout</a>
+            </div>
         </div>
 
         <div class="col-md-10 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold text-dark">Resource Allocation & Logistics</h3>
-                <div class="badge bg-success d-flex align-items-center px-3 py-2">
-                    <span class="spinner-grow spinner-grow-sm me-2"></span> Logistics Network Online
+                <div>
+                    <h3 class="fw-bold text-dark">Resource Allocation & Logistics</h3>
+                    <p class="text-muted mb-0">Generate Official Deployment Orders & Track Assets</p>
+                </div>
+                <div class="badge bg-success d-flex align-items-center px-3 py-2 shadow-sm">
+                    <span class="spinner-grow spinner-grow-sm me-2"></span> System Online
                 </div>
             </div>
 
             <div class="row g-4 mb-4">
-                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-primary"><small class="text-muted fw-bold">TOTAL ASSETS</small><h2 class="fw-bold mb-0" id="count-total">0</h2></div></div>
-                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-success"><small class="text-muted fw-bold">AVAILABLE</small><h2 class="fw-bold mb-0 text-success" id="count-avail">0</h2></div></div>
-                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-danger"><small class="text-muted fw-bold">DEPLOYED</small><h2 class="fw-bold mb-0 text-danger" id="count-dep">0</h2></div></div>
-                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-warning"><small class="text-muted fw-bold">PENDING REQUESTS</small><h2 class="fw-bold mb-0 text-warning" id="count-req">0</h2></div></div>
+                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-primary"><small class="text-muted fw-bold">TOTAL FLEET</small><h2 class="fw-bold mb-0" id="count-total">--</h2></div></div>
+                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-success"><small class="text-muted fw-bold">AVAILABLE</small><h2 class="fw-bold mb-0 text-success" id="count-avail">--</h2></div></div>
+                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-danger"><small class="text-muted fw-bold">DEPLOYED</small><h2 class="fw-bold mb-0 text-danger" id="count-dep">--</h2></div></div>
+                <div class="col-md-3"><div class="card stat-card bg-white p-3 border-start border-5 border-warning"><small class="text-muted fw-bold">PENDING ORDERS</small><h2 class="fw-bold mb-0 text-warning" id="count-req">--</h2></div></div>
             </div>
 
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="card stat-card h-100">
-                        <div class="card-header bg-white fw-bold py-3 border-bottom"><i class="bi bi-stars text-warning"></i> AI Dispatcher</div>
+                        <div class="card-header bg-white fw-bold py-3 border-bottom">
+                            <i class="bi bi-robot text-primary me-2"></i>AI Recommendation Engine
+                        </div>
                         <div class="card-body bg-light" id="ai-suggestions">
-                            <div class="text-center text-muted mt-5"><span class="spinner-border spinner-border-sm"></span> Analyzing Incoming Reports...</div>
+                            <div class="text-center text-muted mt-5">
+                                <div class="spinner-border text-primary mb-3" role="status"></div>
+                                <p>Scanning Incident Reports...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-8">
-                    <div class="card stat-card">
-                        <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between">
-                            <span><i class="bi bi-table"></i> Live Asset Manifest</span>
-                            <button class="btn btn-sm btn-outline-primary" onclick="fetchResources()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                    <div class="card stat-card h-100">
+                        <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-table me-2"></i>Live Asset Manifest</span>
+                            <button class="btn btn-sm btn-outline-primary" onclick="fetchResources()">
+                                <i class="bi bi-arrow-clockwise"></i> Sync
+                            </button>
                         </div>
-                        <div class="card-body p-0">
+                        <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light">
-                                    <tr><th class="ps-4">Unit Name</th><th>Type</th><th>Location</th><th>Status</th><th>Action</th></tr>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Unit Name</th>
+                                        <th>Type</th>
+                                        <th>Current Location</th>
+                                        <th>Status</th>
+                                        <th>Command</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="resource-table-body">
                                     </tbody>
@@ -85,104 +114,143 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
+    // --- CONFIGURATION ---
     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ================= INIT =================
+    // --- INITIALIZATION ---
     window.onload = function() {
-        fetchResources(); 
-        fetchPendingReports();
-        setupRealtimeListeners(); // <--- NEW: Starts the "Listening" Engine
+        console.log("🚀 Command Center Initialized.");
+        fetchDataAndRender(); 
+        setupRealtimeListeners();
     };
 
-    // ================= 1. REALTIME LISTENER (THE FIX) =================
+    // --- REALTIME UPDATES ---
     function setupRealtimeListeners() {
-        console.log("📡 Connected to Logistics Realtime Network...");
-
-        // Listen for ANY change to Resources (Status updates, Recalls)
-        supabase.channel('resources-live')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, payload => {
-                console.log("Resource Update Detected!", payload);
-                fetchResources(); // Auto-Refresh Table
-                fetchPendingReports(); // Re-calculate AI suggestions
+        // Listening to both tables ensures the "Live Join" is always accurate
+        const channels = supabaseClient.channel('custom-all-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, () => {
+                fetchDataAndRender(); 
             })
-            .subscribe();
-
-        // Listen for New Reports (To trigger AI Dispatcher)
-        supabase.channel('reports-live')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'citizen_reports' }, payload => {
-                fetchPendingReports(); // Show new requests immediately
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'citizen_reports' }, () => {
+                fetchDataAndRender(); 
             })
             .subscribe();
     }
 
-    // ================= 2. FETCH RESOURCES & AUTO-RESET =================
-    async function fetchResources() {
-        const { data: resources, error } = await supabase.from('resources').select('*').order('id');
-        if (error) return console.error(error);
+    // --- CORE LOGIC: FETCH & RENDER (LIVE JOIN) ---
+    async function fetchDataAndRender() {
+        try {
+            // 1. Fetch Resources
+            const { data: resources, error: resError } = await supabaseClient
+                .from('resources')
+                .select('*')
+                .order('id');
+            if (resError) throw resError;
 
+            // 2. Fetch Active Missions (For Coordinates)
+            const { data: activeMissions, error: repError } = await supabaseClient
+                .from('citizen_reports')
+                .select('*')
+                .eq('status', 'Assigned');
+            if (repError) throw repError;
+
+            renderResourceTable(resources, activeMissions);
+            fetchPendingReports();
+
+        } catch (err) {
+            console.error("❌ Data Sync Error:", err);
+        }
+    }
+
+    function renderResourceTable(resources, activeMissions) {
         const tbody = document.getElementById('resource-table-body');
-        tbody.innerHTML = '';
+        tbody.innerHTML = ''; 
+        
+        let availableCount = 0;
+        let deployedCount = 0;
 
-        let available = 0, deployed = 0;
-        const TWO_HOURS_MS = 2 * 60 * 60 * 1000; 
-        const now = new Date();
+        resources.forEach(r => {
+            if (r.status === 'Available') availableCount++;
+            if (r.status === 'Deployed') deployedCount++;
 
-        for (const r of resources) {
-            // Auto-Reset Logic
-            let currentStatus = r.status;
-            if (currentStatus === 'Deployed' && r.last_updated) {
-                const deployTime = new Date(r.last_updated);
-                if ((now - deployTime) > TWO_HOURS_MS) {
-                    // Silently reset in background if expired
-                    await supabase.from('resources').update({ status: 'Available', location: 'Base Camp' }).eq('id', r.id);
-                    currentStatus = 'Available'; 
+            // --- COORDINATE MATCHING ---
+            let locationDisplay = `<span class="text-muted"><i class="bi bi-house-door-fill"></i> Base Camp</span>`;
+            
+            if (r.status === 'Deployed') {
+                // Match Resource Name to Report Assignment
+                const mission = activeMissions.find(m => 
+                    m.assigned_to && m.assigned_to.trim().toLowerCase() === r.name.trim().toLowerCase()
+                );
+
+                if (mission) {
+                    const lat = mission.latitude || 0;
+                    const lng = mission.longitude || 0;
+                    // Format for display
+                    locationDisplay = `
+                        <div class="d-flex flex-column" data-bs-toggle="tooltip" data-bs-placement="top" title="GPS: ${lat}, ${lng}">
+                            <span class="fw-bold text-dark" style="font-family: monospace;">
+                                <i class="bi bi-geo-alt-fill text-danger"></i> ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}
+                            </span>
+                            <small class="text-primary" style="cursor: help; font-size: 0.75rem;">
+                                <i class="bi bi-crosshair"></i> View Precision
+                            </small>
+                        </div>`;
+                } else {
+                    locationDisplay = `<span class="text-warning"><i class="bi bi-broadcast"></i> On Mission</span>`;
                 }
             }
 
-            if (currentStatus === 'Available') available++;
-            if (currentStatus === 'Deployed') deployed++;
-
-            // Render Logic
-            const badgeClass = currentStatus === 'Available' ? 'bg-success' : (currentStatus === 'Deployed' ? 'bg-danger' : 'bg-warning');
-            const dotClass = `dot-${currentStatus}`; // Matches CSS
-            
-            const actionBtn = currentStatus === 'Available' 
-                ? `<span class="badge bg-light text-dark border">Ready</span>` 
-                : `<button class="btn btn-sm btn-outline-danger" onclick="recallResource(${r.id}, '${r.name}')">Recall Team</button>`;
+            const dotClass = `dot-${r.status}`;
+            const actionBtn = r.status === 'Available' 
+                ? `<span class="badge bg-light text-muted border">Standby</span>` 
+                : `<button class="btn btn-sm btn-outline-danger" onclick="recallResource(${r.id}, '${r.name}')">
+                    <i class="bi bi-arrow-return-left"></i> Recall
+                   </button>`;
 
             const row = `
-                <tr class="fade-in">
-                    <td class="ps-4 fw-bold">${r.name}</td>
+                <tr>
+                    <td class="ps-4 fw-bold text-dark">${r.name}</td>
                     <td><span class="badge bg-secondary">${r.type}</span></td>
-                    <td class="text-muted">${r.location}</td>
-                    <td><span class="status-dot ${dotClass}"></span> ${currentStatus}</td>
+                    <td>${locationDisplay}</td>
+                    <td><span class="status-dot ${dotClass}"></span> ${r.status}</td>
                     <td>${actionBtn}</td>
                 </tr>`;
             tbody.innerHTML += row;
-        }
+        });
 
-        // Update Stats
         document.getElementById('count-total').innerText = resources.length;
-        document.getElementById('count-avail').innerText = available;
-        document.getElementById('count-dep').innerText = deployed;
+        document.getElementById('count-avail').innerText = availableCount;
+        document.getElementById('count-dep').innerText = deployedCount;
+        
+        // Re-init Tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl) });
     }
 
-    // ================= 3. AI DISPATCHER =================
+    // --- AI DISPATCHER ---
     async function fetchPendingReports() {
-        const { data: reports } = await supabase.from('citizen_reports').select('*').eq('status', 'Open').limit(5);
+        const { data: reports } = await supabaseClient
+            .from('citizen_reports')
+            .select('*')
+            .eq('status', 'Open')
+            .limit(5);
+
         document.getElementById('count-req').innerText = reports ? reports.length : 0;
-        
         const container = document.getElementById('ai-suggestions');
         container.innerHTML = '';
 
-        if(!reports || reports.length === 0) {
-            container.innerHTML = '<div class="text-center text-muted mt-5"><i class="bi bi-check-circle text-success fs-1"></i><br>All systems nominal.</div>';
+        if (!reports || reports.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted mt-5 fade-in">
+                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    <p class="mt-2">All sectors clear.</p>
+                </div>`;
             return;
         }
 
-        const { data: availableResources } = await supabase.from('resources').select('*').eq('status', 'Available');
+        const { data: availableResources } = await supabaseClient.from('resources').select('*').eq('status', 'Available');
 
         reports.forEach(report => {
             let matchType = 'Rescue'; 
@@ -191,17 +259,26 @@
 
             const match = availableResources.find(r => r.type === matchType || r.type === 'Rescue');
 
-            if(match) {
+            if (match) {
+                const lat = Number(report.latitude || 0).toFixed(4);
+                const lng = Number(report.longitude || 0).toFixed(4);
+
                 const card = `
-                    <div class="card ai-suggestion mb-3 shadow-sm border-0">
+                    <div class="card ai-suggestion mb-3 shadow-sm">
                         <div class="card-body p-3">
-                            <h6 class="fw-bold text-primary mb-1">⚡ Intelligent Dispatch</h6>
-                            <p class="small text-dark mb-2">
-                                Incident: <strong>${report.category}</strong><br>
-                                Asset: <strong>${match.name}</strong> (${match.type})
-                            </p>
-                            <button class="btn btn-sm btn-primary w-100 mt-2" onclick="dispatch('${match.id}', '${match.name}', '${report.id}')">
-                                <i class="bi bi-send-fill"></i> Deploy Asset
+                            <div class="d-flex justify-content-between">
+                                <h6 class="fw-bold text-primary mb-1"><i class="bi bi-lightning-fill"></i> Action Required</h6>
+                                <span class="badge bg-danger">CRITICAL</span>
+                            </div>
+                            <div class="small text-dark mb-2 mt-2">
+                                <strong>Report ID:</strong> #${report.id}<br>
+                                <strong>Incident:</strong> ${report.category}<br>
+                                <strong>Location:</strong> ${lat}, ${lng}<br>
+                                <strong>Suggested Unit:</strong> ${match.name}
+                            </div>
+                            <button class="btn btn-sm btn-primary w-100 mt-1" 
+                                onclick="generateOfficialOrder('${match.id}', '${match.name}', '${report.id}', this)">
+                                <i class="bi bi-file-earmark-pdf-fill"></i> Issue Order & Deploy
                             </button>
                         </div>
                     </div>`;
@@ -210,35 +287,156 @@
         });
     }
 
-    // ================= 4. ACTIONS =================
-    async function dispatch(resId, resName, reportId) {
-        // Optimistic UI: Remove card immediately to feel fast
-        document.getElementById('ai-suggestions').innerHTML = '<div class="text-center mt-5"><span class="spinner-border spinner-border-sm text-primary"></span> Deploying...</div>';
-
-        // 1. Update Resource
-        await supabase.from('resources').update({ 
-            status: 'Deployed', 
-            location: 'On Mission',
-            last_updated: new Date().toISOString()
-        }).eq('id', resId);
+    // --- OFFICIAL ORDER GENERATOR (UPDATED PDF) ---
+    async function generateOfficialOrder(resId, resName, reportId, btnElement) {
         
-        // 2. Update Report
-        await supabase.from('citizen_reports').update({ 
-            status: 'Assigned', 
-            assigned_to: resName,
-            deployment_time: new Date().toISOString() 
-        }).eq('id', reportId);
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signing...';
+        btnElement.disabled = true;
 
-        // Note: We don't need to call fetchResources() here manually anymore
-        // because the Realtime Listener will trigger it automatically!
+        try {
+            // 1. Fetch Details
+            const { data: reportData, error } = await supabaseClient
+                .from('citizen_reports')
+                .select('*')
+                .eq('id', reportId)
+                .single();
+
+            if (error) throw error;
+
+            // Prepare Variables
+            const lat = reportData.latitude;
+            const lng = reportData.longitude;
+            // Combining Name + Coords so it fits in your layout
+            const targetLocation = `${reportData.location_text || "Field Loc"} (${lat}, ${lng})`;
+            const missionCode = `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+            const dateStr = new Date().toLocaleDateString();
+
+            // 2. GENERATE PDF (YOUR CUSTOM TEMPLATE)
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // -- HEADER --
+            doc.setFont("times", "bold");
+            doc.setFontSize(16);
+            doc.text("GOVERNMENT OF INDIA", 105, 20, null, null, "center");
+            doc.setFontSize(12);
+            doc.text("DEPARTMENT OF DISASTER MANAGEMENT", 105, 28, null, null, "center");
+            doc.text("EMERGENCY OPERATIONS CENTER (EOC)", 105, 34, null, null, "center");
+            
+            doc.setLineWidth(0.5);
+            doc.line(20, 38, 190, 38); 
+
+            // -- META DATA --
+            doc.setFont("times", "normal");
+            doc.setFontSize(10);
+            doc.text(`Order No: ${missionCode}`, 20, 48);
+            doc.text(`Date: ${dateStr}`, 150, 48);
+
+            // -- RECIPIENT --
+            doc.setFont("times", "bold");
+            doc.text("To,", 20, 60);
+            doc.text(`The Unit Commander,`, 20, 65);
+            doc.text(`${resName}`, 20, 70);
+            doc.setFont("times", "normal");
+            doc.text("Base Camp HQ", 20, 75);
+
+            // -- SUBJECT --
+            doc.setFont("times", "bold");
+            doc.text(`Subject: IMMEDIATE DEPLOYMENT ORDER - ${reportData.category.toUpperCase()} RESPONSE`, 20, 90);
+
+            // -- BODY --
+            doc.setFont("times", "normal");
+            const bodyText = `1. In exercise of powers conferred under Section 24 of the Disaster Management Act, the Competent Authority has ordered the immediate mobilization of ${resName}.
+
+2. You are hereby directed to move with immediate effect to the following target location:`;
+            
+            doc.text(doc.splitTextToSize(bodyText, 170), 20, 105);
+
+            // -- LOCATION BOX --
+            doc.setDrawColor(0);
+            doc.setFillColor(245, 245, 245);
+            doc.rect(30, 135, 150, 30, 'FD');
+            doc.setFont("times", "bold");
+            doc.text(`TARGET: ${targetLocation}`, 40, 145);
+            doc.text(`PRIORITY: CRITICAL / IMMEDIATE`, 40, 155);
+            doc.text(`INCIDENT ID: #${reportId}`, 130, 155);
+
+            // -- FOOTER --
+            doc.setFont("times", "normal");
+            doc.text("3. The Unit Commander is directed to establish communication with Control Room upon arrival.", 20, 180);
+            doc.text("4. Strict adherence to safety protocols is mandatory.", 20, 188);
+
+            // -- SIGNATURE --
+            doc.setFont("times", "bold");
+            doc.text("(Signed)", 150, 220);
+            doc.text("CHIEF OPERATIONS OFFICER", 130, 225);
+            doc.text("AapdaSetu Command Center", 130, 230);
+            doc.text("Government of India", 130, 235);
+
+            // -- DIGITAL STAMP --
+            doc.setDrawColor(255, 0, 0); 
+            doc.setLineWidth(1);
+            doc.circle(160, 225, 15);
+            doc.setTextColor(255, 0, 0);
+            doc.setFontSize(8);
+            doc.text("DIGITALLY", 152, 222);
+            doc.text("AUTHORIZED", 149, 228);
+            
+            // SAVE PDF
+            doc.save(`Deployment_Order_${resName}_${missionCode}.pdf`);
+
+            // 3. DATABASE UPDATES
+            
+            // A. Log Mission
+            await supabaseClient.from('mission_logs').insert([{
+                mission_code: missionCode,
+                team_name: resName,
+                team_id: resId,
+                incident_report_id: reportId,
+                target_location: targetLocation,
+                mission_type: reportData.category
+            }]);
+
+            // B. Update Resource Status
+            await supabaseClient.from('resources').update({ 
+                status: 'Deployed', 
+                location: 'On Mission', 
+                last_updated: new Date().toISOString()
+            }).eq('id', resId);
+            
+            // C. Assign Report (Links report location to resource)
+            await supabaseClient.from('citizen_reports').update({ 
+                status: 'Assigned', 
+                assigned_to: resName, 
+                deployment_time: new Date().toISOString() 
+            }).eq('id', reportId);
+
+            // 4. Force UI Refresh
+            setTimeout(() => {
+                fetchDataAndRender();
+            }, 500);
+
+            btnElement.innerHTML = '<i class="bi bi-check-circle"></i> Deployed!';
+            btnElement.classList.remove('btn-primary');
+            btnElement.classList.add('btn-success');
+
+        } catch (err) {
+            console.error(err);
+            alert("Deployment Error: " + err.message);
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        }
     }
 
     async function recallResource(id, name) {
         if(confirm(`Recall ${name} to Base Camp?`)) {
-            await supabase.from('resources').update({ 
+            await supabaseClient.from('resources').update({ 
                 status: 'Available', 
                 location: 'Base Camp' 
             }).eq('id', id);
+            
+            setTimeout(() => { fetchDataAndRender(); }, 200);
         }
     }
 </script>
