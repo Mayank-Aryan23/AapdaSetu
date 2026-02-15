@@ -16,34 +16,82 @@
         .status-danger { background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%); color: white; padding: 40px 20px; border-radius: 0 0 30px 30px; text-align: center; animation: pulseRed 2s infinite; }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(239, 71, 58, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0); } }
         
+        /* WEATHER CARD STYLES */
+        .weather-card { background: #ffffff; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid #f0f0f0; margin-top: -20px; position: relative; z-index: 10; }
+        .weather-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .weather-metrics { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px; margin-bottom: 15px; font-size: 0.9rem; color: #6c757d; }
+        .forecast-scroll { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; scrollbar-width: none; }
+        .forecast-scroll::-webkit-scrollbar { display: none; }
+        .forecast-item { min-width: 65px; text-align: center; font-size: 0.8rem; background: #f8f9fa; padding: 10px; border-radius: 12px; border: 1px solid #eee; }
+        
         /* CHAT & BUTTONS */
         .chat-interface { background: #f8f9fa; border-radius: 15px; height: 350px; display: flex; flex-direction: column; }
         .chat-history { flex-grow: 1; overflow-y: auto; padding: 15px; }
-        
-        /* Chat Bubbles */
         .bot-msg { background: #e9ecef; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block; margin-bottom: 10px; font-size: 0.9rem; max-width: 85%; }
         .user-msg { background: #0d6efd; color: white; padding: 10px 15px; border-radius: 15px 15px 0 15px; display: inline-block; margin-bottom: 10px; float: right; clear: both; font-size: 0.9rem; max-width: 85%; }
-        
-        /* Typing Indicator */
         .typing { font-style: italic; color: #888; font-size: 0.8rem; margin-left: 10px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="mobile-container">
+    
     <div id="status-header" class="status-safe">
         <div class="d-flex justify-content-between mb-3">
-            <small id="geo-text"><i class="bi bi-geo-alt-fill"></i> Locating...</small>
+            <small id="geo-text" class="fw-bold"><i class="bi bi-geo-alt-fill"></i> Locating...</small>
             <span class="badge bg-white text-dark" id="distance-badge" style="display:none">0 km away</span>
         </div>
         <div id="status-content">
             <i class="bi bi-shield-check display-1 mb-2"></i>
             <h2 class="fw-bold">You are Safe</h2>
-            <p class="opacity-75">No active threats in your zone.</p>
+            <p class="opacity-75 pb-3">No active threats in your zone.</p>
         </div>
     </div>
 
     <div class="p-3">
+        
+        <div class="weather-card">
+            <div class="weather-main">
+                <div>
+                    <h2 class="fw-bold mb-0" id="w-temp">--°C</h2>
+                    <span class="text-muted fw-bold" id="w-desc">Loading...</span>
+                </div>
+                <img id="w-icon" src="" alt="Weather" style="width: 55px; display:none;">
+            </div>
+            
+            <div class="weather-metrics">
+                <span><i class="bi bi-droplet-fill text-primary"></i> <span id="w-humid">--%</span></span>
+                <span><i class="bi bi-wind text-secondary"></i> <span id="w-wind">-- km/h</span></span>
+                <span><i class="bi bi-cloud-fill text-info"></i> <span id="w-cloud">--%</span></span>
+            </div>
+
+            <p class="fw-bold small text-muted mb-2"><i class="bi bi-clock-history"></i> FORECAST (6 HRS)</p>
+            <div class="forecast-scroll" id="forecast-container">
+                <div class="text-center w-100 text-muted small">Fetching local forecast...</div>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people-fill text-primary"></i> Safety Network</span>
+                <span class="badge bg-primary fs-6" id="my-id-badge">ID: Loading...</span>
+            </div>
+            <div class="card-body bg-light p-3">
+                <div class="mb-3" id="my-middleman-section">
+                    <label class="small fw-bold text-muted">My Assigned Middleman:</label>
+                    <div class="input-group input-group-sm mt-1" id="add-middleman-box">
+                        <input type="text" id="middleman-input" class="form-control" placeholder="Enter their 4-digit ID">
+                        <button class="btn btn-outline-primary fw-bold" onclick="requestMiddleman()">Link</button>
+                    </div>
+                    <div id="middleman-status-display" class="mt-1 small fw-bold"></div>
+                </div>
+                <div>
+                    <label class="small fw-bold text-muted">Citizens I Protect:</label>
+                    <ul class="list-group list-group-sm mt-1" id="protected-citizens-list">
+                        <li class="list-group-item small text-muted">No one linked yet.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <div class="d-grid gap-2 mb-4">
             <button class="btn btn-warning btn-lg fw-bold py-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#reportModal">
                 <i class="bi bi-camera-video-fill me-2"></i> REPORT INCIDENT
@@ -53,16 +101,16 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between">
                 <span><i class="bi bi-robot text-primary"></i> AapdaSetu AI</span>
-                <span class="badge bg-light text-dark border">AI Chatbot</span>
+                <span class="badge bg-light text-dark border">Assistant</span>
             </div>
             <div class="card-body p-0">
                 <div class="chat-interface">
                     <div class="chat-history" id="chat-history">
-                        <div class="bot-msg">Hello. I am connected to the National Disaster Database. <br><br>I know your location and current alert status. How can I help?</div>
+                        <div class="bot-msg">Hello. I am connected to the National Disaster Database. <br><br>I know your location, current alert status, and weather. How can I help?</div>
                     </div>
                     <div id="typing-indicator" class="typing">AI is analyzing safety protocols...</div>
                     <div class="p-2 bg-white border-top d-flex gap-2">
-                        <input type="text" id="user-input" class="form-control border-0 bg-light" placeholder="Ex: Where is the nearest shelter?" onkeypress="handleEnter(event)">
+                        <input type="text" id="user-input" class="form-control border-0 bg-light" placeholder="Ask for safety steps..." onkeypress="handleEnter(event)">
                         <button class="btn btn-primary rounded-circle" onclick="sendMessage()"><i class="bi bi-send-fill"></i></button>
                     </div>
                 </div>
@@ -88,13 +136,45 @@
                         <div class="col-6"><input type="radio" class="btn-check" name="category" id="cat3" value="Infra"><label class="btn btn-outline-dark w-100" for="cat3"><i class="bi bi-bricks"></i> Collapse</label></div>
                         <div class="col-6"><input type="radio" class="btn-check" name="category" id="cat4" value="Food"><label class="btn btn-outline-warning w-100" for="cat4"><i class="bi bi-basket"></i> Food</label></div>
                     </div>
-                    <div class="mb-3"><label class="form-label fw-bold small text-muted">EVIDENCE</label><input type="file" class="form-control" id="reportImage"></div>
-                    <div class="mb-3"><label class="form-label fw-bold small text-muted">DESCRIPTION</label><textarea class="form-control" id="reportDetails" rows="3" placeholder="Describe the situation..."></textarea></div>
+
+                    <div class="mb-3 p-2 border rounded bg-light border-primary">
+                        <label class="form-label fw-bold small text-primary mb-1"><i class="bi bi-person-badge"></i> REPORTING FOR</label>
+                        <select class="form-select fw-bold" id="reportTarget">
+                            <option value="ME">Myself (Current Location)</option>
+                        </select>
+                        <small class="text-muted" style="font-size: 0.7rem;">Note: GPS will capture your current device location.</small>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <label class="form-label fw-bold small text-muted"><i class="bi bi-mic-fill text-danger"></i> VOICE REPORT (OPTIONAL)</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" id="recordBtn" class="btn btn-danger w-100 fw-bold shadow-sm" onclick="toggleRecording()">
+                                <i class="bi bi-mic"></i> Tap to Speak
+                            </button>
+                            
+                            <audio id="audioPlayback" controls style="display:none; height: 38px; width: 100%;"></audio>
+                            
+                            <button type="button" id="retryRecordBtn" class="btn btn-outline-danger shadow-sm" style="display:none;" onclick="resetRecording()" title="Record Again">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                        <small id="transcriptionStatus" class="text-muted mt-2 d-block" style="display:none;"></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">EVIDENCE (PHOTO)</label>
+                        <input type="file" class="form-control" id="reportImage" accept="image/*">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">DESCRIPTION (AUTO-FILLED BY VOICE)</label>
+                        <textarea class="form-control" id="reportDetails" rows="3" placeholder="Describe the situation or use voice recording above..."></textarea>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary fw-bold w-100" onclick="submitDetailedReport()">SUBMIT REPORT</button>
+                <button type="button" class="btn btn-primary fw-bold w-100 py-2" id="submitReportBtn" onclick="submitDetailedReport()">SUBMIT REPORT</button>
             </div>
         </div>
     </div>
@@ -107,21 +187,18 @@
     // ================= CONFIGURATION =================
     const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
-    
-    // Note: In production, do not expose API keys client-side. This is for MVP/Demo only.
-    const GEMINI_API_KEY = 'AIzaSyDzThTY9eY89Aa78e4chAL2DmImG8ReQDg'; 
-    
-    // FIX 1: Renamed variable from 'supabase' to 'supabaseClient' to avoid conflict with the library namespace
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // STATE
     let myLocation = { lat: 20.2961, lng: 85.8245 }; // Default
     const GEOFENCE_RADIUS_KM = 50;
     let currentAlertData = null; 
+    let conversationHistory = [];
 
     // ================= 1. INIT =================
     window.onload = function() {
         initLocation();
+        initSafetyNetwork();
         listenForAlerts();
     };
 
@@ -131,8 +208,9 @@
             navigator.geolocation.getCurrentPosition((pos) => {
                 myLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 geoText.innerHTML = `<i class="bi bi-geo-alt-fill"></i> Lat: ${myLocation.lat.toFixed(2)}, Lng: ${myLocation.lng.toFixed(2)}`;
-                geoText.classList.add('text-success');
+                geoText.classList.remove('text-warning');
                 checkActiveAlerts(); 
+                fetchLocalWeather(myLocation.lat, myLocation.lng); 
             }, (err) => {
                 console.warn("GPS Error:", err);
                 useSimulationMode();
@@ -144,61 +222,114 @@
 
     function useSimulationMode() {
         const geoText = document.getElementById('geo-text');
-        // Force Odisha for testing if GPS fails
         myLocation = { lat: 20.94, lng: 86.45 }; 
         geoText.innerHTML = `<i class="bi bi-pin-map-fill"></i> Odisha (Simulated)`;
         geoText.classList.add('text-warning');
-        alert("⚠️ GPS Denied. Using Simulation Mode (Odisha).");
         checkActiveAlerts();
+        fetchLocalWeather(myLocation.lat, myLocation.lng); 
     }
 
-    // ================= 2. REALTIME ALERTS =================
+    // ================= 2. WEATHER LOGIC (OPEN-METEO) =================
+    async function fetchLocalWeather(lat, lng) {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,cloud_cover&hourly=temperature_2m,weather_code&timezone=auto`;
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (!data.current) throw new Error("No weather data found");
+
+            const current = data.current;
+            const weatherInfo = getWeatherDesc(current.weather_code);
+
+            document.getElementById('w-temp').innerText = `${Math.round(current.temperature_2m)}°C`;
+            document.getElementById('w-desc').innerText = weatherInfo.desc;
+            document.getElementById('w-humid').innerText = `${current.relative_humidity_2m}%`;
+            document.getElementById('w-wind').innerText = `${current.wind_speed_10m} km/h`;
+            document.getElementById('w-cloud').innerText = `${current.cloud_cover}%`;
+
+            const iconImg = document.getElementById('w-icon');
+            iconImg.src = weatherInfo.icon;
+            iconImg.style.display = 'block';
+
+            const forecastContainer = document.getElementById('forecast-container');
+            forecastContainer.innerHTML = ''; 
+
+            const currentHourIndex = new Date().getHours();
+            for(let i = 0; i < 6; i++) {
+                const targetIndex = (currentHourIndex + i) % 24;
+                const temp = data.hourly.temperature_2m[targetIndex];
+                const code = data.hourly.weather_code[targetIndex];
+                const fInfo = getWeatherDesc(code);
+                const timeStr = `${targetIndex.toString().padStart(2, '0')}:00`;
+
+                const div = document.createElement('div');
+                div.className = 'forecast-item';
+                div.innerHTML = `
+                    <div class="fw-bold mb-1">${timeStr}</div>
+                    <img src="${fInfo.icon}" width="25" class="mb-1">
+                    <div class="fw-bold text-dark">${Math.round(temp)}°</div>
+                `;
+                forecastContainer.appendChild(div);
+            }
+        } catch (error) {
+            console.error("Weather API Error:", error);
+            document.getElementById('w-desc').innerText = "Weather Unavailable";
+            document.getElementById('forecast-container').innerHTML = `<small class="text-danger">Service Offline</small>`;
+        }
+    }
+
+    function getWeatherDesc(code) {
+        const map = {
+            0: { desc: "Clear Sky", icon: "https://openweathermap.org/img/wn/01d@2x.png" },
+            1: { desc: "Mainly Clear", icon: "https://openweathermap.org/img/wn/02d@2x.png" },
+            2: { desc: "Partly Cloudy", icon: "https://openweathermap.org/img/wn/03d@2x.png" },
+            3: { desc: "Overcast", icon: "https://openweathermap.org/img/wn/04d@2x.png" },
+            45: { desc: "Fog", icon: "https://openweathermap.org/img/wn/50d@2x.png" },
+            51: { desc: "Light Drizzle", icon: "https://openweathermap.org/img/wn/09d@2x.png" },
+            61: { desc: "Rain", icon: "https://openweathermap.org/img/wn/10d@2x.png" },
+            65: { desc: "Heavy Rain", icon: "https://openweathermap.org/img/wn/10d@2x.png" },
+            71: { desc: "Snow", icon: "https://openweathermap.org/img/wn/13d@2x.png" },
+            95: { desc: "Thunderstorm", icon: "https://openweathermap.org/img/wn/11d@2x.png" }
+        };
+        return map[code] || { desc: "Unknown", icon: "https://openweathermap.org/img/wn/03d@2x.png" };
+    }
+
+    // ================= 3. REALTIME ALERTS =================
     function listenForAlerts() {
-        // Updated to use supabaseClient
         supabaseClient.channel('citizen-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, payload => {
-            // Re-check everything whenever anything changes
             checkActiveAlerts();
         }).subscribe();
     }
 
     async function checkActiveAlerts() {
-        // Updated to use supabaseClient
         const { data } = await supabaseClient.from('alerts').select('*').eq('status', 'Active');
         
         if (!data || data.length === 0) {
-            if (currentAlertData) showGreenScreen(); // Clear alert if it was resolved
+            if (currentAlertData) showGreenScreen(); 
             currentAlertData = null;
             return;
         }
 
         let foundDanger = false;
-
-        // Loop through ALL active alerts
         for (let alert of data) {
             const alertLat = alert.latitude || 20.94; 
             const alertLng = alert.longitude || 86.45;
             const radius = alert.radius_km || 50;
-
             const distance = getDistanceFromLatLonInKm(myLocation.lat, myLocation.lng, alertLat, alertLng);
-            
-            console.log(`Checking Alert: ${alert.title} | Distance: ${distance.toFixed(1)}km | Radius: ${radius}km`);
 
             if (distance <= radius) {
-                // Found a relevant alert!
                 currentAlertData = alert;
                 showRedScreen(alert, distance);
                 foundDanger = true;
-                break; // Stop looking, we found the danger
+                break; 
             }
         }
 
-        // If we looped through all and found nothing, but screen is red -> reset to green
         if (!foundDanger && document.getElementById('status-header').classList.contains('status-danger')) {
             showGreenScreen();
         }
     }
 
-    // ================= 3. AI AGENT LOGIC (GEMINI) =================
+    // ================= 4. AI AGENT LOGIC (SECURE BACKEND) =================
     async function sendMessage() {
         const inputField = document.getElementById('user-input');
         const userText = inputField.value.trim();
@@ -211,37 +342,45 @@
         let systemContext = `
             You are 'AapdaSetu', an Emergency Response AI.
             USER LOCATION: Lat ${myLocation.lat}, Lng ${myLocation.lng}.
+            CURRENT WEATHER: ${document.getElementById('w-temp').innerText}, ${document.getElementById('w-desc').innerText}.
             CURRENT ALERT: ${currentAlertData ? currentAlertData.title : "None"}.
-            
-            INSTRUCTIONS:
-            - Keep answers under 50 words.
-            - If the user is in danger, tell them to click "Report Incident".
-            - Refuse non-safety questions.
+            INSTRUCTIONS: Keep answers under 40 words. If the user is in danger, tell them to click "Report Incident".
         `;
 
+        if (conversationHistory.length === 0) {
+            conversationHistory.push({ role: "system", content: systemContext });
+        } else {
+            conversationHistory[0].content = systemContext;
+        }
+
+        conversationHistory.push({ role: "user", content: userText });
+
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            // 🚨 FETCHING FROM OUR LOCAL NODE SERVER (NO API KEY EXPOSED)
+            const response = await fetch('/api/ai-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: systemContext + "\n\nUSER QUESTION: " + userText }]
-                    }]
+                    model: "gpt-4o-mini",
+                    messages: conversationHistory,
+                    max_tokens: 150
                 })
             });
 
             const data = await response.json();
-            
             if(data.error) throw new Error(data.error.message);
 
-            const aiText = data.candidates[0].content.parts[0].text;
+            const aiText = data.choices[0].message.content;
+            conversationHistory.push({ role: "assistant", content: aiText });
+
             document.getElementById('typing-indicator').style.display = 'none';
             addMessage(aiText, 'bot-msg'); 
 
         } catch (error) {
             console.error("AI Error:", error);
             document.getElementById('typing-indicator').style.display = 'none';
-            addMessage(`⚠️ <strong>AI Error:</strong> ${error.message}`, 'bot-msg');
+            addMessage(`⚠️ <strong>Connection Error:</strong> Could not reach AI server.`, 'bot-msg');
+            conversationHistory.pop();
         }
     }
 
@@ -255,10 +394,9 @@
     function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
     function addBotMessage(text) { addMessage(text, 'bot-msg'); }
 
-    // ================= 4. HELPERS (Geofence, UI, Reports) =================
+    // ================= 5. HELPERS =================
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
         var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
-        // FIX 2: Corrected Haversine formula (was using cos(lat1) twice)
         var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
@@ -270,8 +408,6 @@
         document.getElementById('status-content').innerHTML = `<i class="bi bi-exclamation-triangle-fill display-1 mb-2"></i><h2 class="fw-bold">${data.title}</h2><p>${data.summary}</p><div class="bg-white text-danger rounded p-2 fw-bold shadow-sm">STAY INDOORS</div>`;
         document.getElementById('distance-badge').innerText = `Impact Zone (${distance.toFixed(1)}km)`;
         document.getElementById('distance-badge').style.display = 'inline-block';
-        
-        // Only update chat if it's a new alert
         if (document.querySelector('.bot-msg').innerText.includes('Hello')) {
              addBotMessage(`⚠️ <strong>ALERT UPDATE:</strong> ${data.title} is active near you. I have updated my safety protocols.`);
         }
@@ -284,36 +420,283 @@
         document.getElementById('distance-badge').style.display = 'none';
     }
 
-    async function submitDetailedReport() {
-        const category = document.querySelector('input[name="category"]:checked').value;
-        const details = document.getElementById('reportDetails').value;
-        const imageFile = document.getElementById('reportImage').files[0];
-        const submitBtn = document.querySelector('#reportModal .btn-primary');
-        submitBtn.innerText = "Uploading..."; submitBtn.disabled = true;
-        
-        let finalImageURL = null;
-        if (imageFile) {
-            const fileName = `${Date.now()}_${imageFile.name.replace(/\s/g, '_')}`;
-            // Updated to use supabaseClient
-            const { error: uploadError } = await supabaseClient.storage.from('reports').upload(fileName, imageFile);
-            if (!uploadError) {
-                // Updated to use supabaseClient
-                const { data: urlData } = supabaseClient.storage.from('reports').getPublicUrl(fileName);
-                finalImageURL = urlData.publicUrl;
+    // ================= 7. VOICE REPORTING (SECURE BACKEND) =================
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioBlob = null;
+    let isRecording = false;
+
+    async function toggleRecording() {
+        const btn = document.getElementById('recordBtn');
+        const status = document.getElementById('transcriptionStatus');
+
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    document.getElementById('audioPlayback').src = URL.createObjectURL(audioBlob);
+                    document.getElementById('audioPlayback').style.display = 'block';
+                    document.getElementById('retryRecordBtn').style.display = 'block'; 
+                    btn.style.display = 'none'; 
+                    
+                    status.style.display = 'block';
+                    status.innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span> Transcribing...';
+                    await transcribeAudio(audioBlob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                btn.classList.replace('btn-danger', 'btn-outline-danger');
+                btn.innerHTML = '<i class="bi bi-stop-circle-fill text-danger pulse"></i> Stop Recording';
+            } catch (err) {
+                alert("Microphone access denied. Please allow mic permissions.");
             }
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
         }
+    }
 
-        // Updated to use supabaseClient
-        const { error } = await supabaseClient.from('citizen_reports').insert({
-            category: category, details: details, latitude: myLocation.lat, longitude: myLocation.lng, image_url: finalImageURL
-        });
+    function resetRecording() {
+        audioBlob = null;
+        audioChunks = [];
+        document.getElementById('audioPlayback').style.display = 'none';
+        document.getElementById('audioPlayback').src = "";
+        document.getElementById('retryRecordBtn').style.display = 'none';
+        document.getElementById('transcriptionStatus').style.display = 'none';
+        
+        const btn = document.getElementById('recordBtn');
+        btn.style.display = 'block';
+        btn.classList.replace('btn-outline-danger', 'btn-danger');
+        btn.innerHTML = '<i class="bi bi-mic"></i> Tap to Speak';
+    }
 
-        submitBtn.innerText = "SUBMIT REPORT"; submitBtn.disabled = false;
-        const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
-        modal.hide();
+    async function transcribeAudio(blob) {
+        const formData = new FormData();
+        formData.append('file', blob, 'audio.webm');
 
-        if (!error) alert("✅ Report Submitted! Response teams notified.");
-        else alert("Error: " + error.message);
+        try {
+            // 🚨 FETCHING FROM OUR LOCAL NODE SERVER (NO API KEY EXPOSED)
+            const response = await fetch('/api/ai-transcribe', {
+                method: 'POST',
+                body: formData // Note: Content-Type is auto-set by the browser for FormData
+            });
+            
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            const textArea = document.getElementById('reportDetails');
+            const prefix = textArea.value ? textArea.value + "\n" : "";
+            textArea.value = prefix + "[Translated Voice]: " + data.text;
+            
+            document.getElementById('transcriptionStatus').innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Translated to English successfully!';
+        } catch (err) {
+            console.error("Translation Error:", err);
+            document.getElementById('transcriptionStatus').innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Failed: ${err.message}</span>`;
+        }
+    }
+
+    // ================= 8. SUBMIT REPORT =================
+    async function submitDetailedReport() {
+        if(!supabaseClient) return;
+        
+        const category = document.querySelector('input[name="category"]:checked').value;
+        let details = document.getElementById('reportDetails').value;
+        const imageFile = document.getElementById('reportImage').files[0];
+        
+        const submitBtn = document.getElementById('submitReportBtn');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Locating Target...'; 
+        submitBtn.disabled = true;
+        
+        try {
+            let reportLat = myLocation.lat;
+            let reportLng = myLocation.lng;
+            const targetElement = document.getElementById('reportTarget');
+
+            if (targetElement && targetElement.value !== "ME") {
+                const targetCitizenId = targetElement.value;
+                details = `[🚨 PROXY REPORT ON BEHALF OF CITIZEN-${targetCitizenId}] \n\n` + details;
+                
+                const { data: targetProfile, error: profileErr } = await supabaseClient
+                    .from('profiles')
+                    .select('latitude, longitude')
+                    .eq('citizen_id', targetCitizenId)
+                    .single();
+
+                if (!profileErr && targetProfile && targetProfile.latitude) {
+                    reportLat = targetProfile.latitude;
+                    reportLng = targetProfile.longitude;
+                } else {
+                    details += "\n\n⚠️ SYSTEM NOTE: Target citizen's GPS location unavailable. Placed marker at Middleman's location.";
+                }
+            }
+
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Uploading Evidence...';
+
+            let finalImageURL = null;
+            let finalAudioURL = null;
+
+            if (imageFile) {
+                const imgName = `img_${Date.now()}_${imageFile.name.replace(/\s/g, '_')}`;
+                const { error: imgErr } = await supabaseClient.storage.from('reports').upload(imgName, imageFile);
+                if (!imgErr) {
+                    const { data: urlData } = supabaseClient.storage.from('reports').getPublicUrl(imgName);
+                    finalImageURL = urlData.publicUrl;
+                }
+            }
+
+            if (audioBlob) {
+                const audioName = `audio_${Date.now()}.webm`;
+                const { error: audioErr } = await supabaseClient.storage.from('reports').upload(audioName, audioBlob);
+                if (!audioErr) {
+                    const { data: urlData } = supabaseClient.storage.from('reports').getPublicUrl(audioName);
+                    finalAudioURL = urlData.publicUrl;
+                }
+            }
+
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Dispatching...';
+
+            const { error: dbError } = await supabaseClient.from('citizen_reports').insert({
+                category: category, 
+                details: details, 
+                latitude: reportLat, 
+                longitude: reportLng, 
+                image_url: finalImageURL,
+                audio_url: finalAudioURL 
+            });
+
+            if (dbError) throw dbError;
+
+            alert("✅ Report Submitted! Rescue teams are heading to the target location.");
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
+            modal.hide();
+            document.getElementById('incidentForm').reset();
+            resetRecording();
+            
+        } catch (error) {
+            console.error("Submission failed:", error);
+            alert("Error: " + error.message);
+        } finally {
+            submitBtn.innerHTML = originalBtnText; 
+            submitBtn.disabled = false;
+        }
+    }
+
+    // ================= 9. SAFETY NETWORK (MIDDLEMAN) LOGIC =================
+    let myCitizenId = null;
+
+    async function initSafetyNetwork() {
+        document.getElementById('my-id-badge').innerText = `ID: Loading...`;
+
+        try {
+            const { data: authData } = await supabaseClient.auth.getUser();
+            
+            if (authData && authData.user) {
+                const { data: profileData } = await supabaseClient
+                    .from('profiles')
+                    .select('citizen_id')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                if (profileData && profileData.citizen_id) {
+                    myCitizenId = profileData.citizen_id.toString();
+                }
+            }
+
+            if (!myCitizenId) {
+                myCitizenId = localStorage.getItem('aapda_fallback_id');
+                if (!myCitizenId) {
+                    myCitizenId = Math.floor(1000 + Math.random() * 9000).toString();
+                    localStorage.setItem('aapda_fallback_id', myCitizenId);
+                }
+            }
+
+            document.getElementById('my-id-badge').innerText = `My ID: ${myCitizenId}`;
+            loadNetworkData();
+
+            supabaseClient.channel('network-updates')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'middleman_links' }, () => {
+                    loadNetworkData();
+                }).subscribe();
+
+        } catch (err) {
+            console.error("Network init error:", err);
+            document.getElementById('my-id-badge').innerText = `ID: Error`;
+        }
+    }
+
+    async function loadNetworkData() {
+        if(!supabaseClient || !myCitizenId) return;
+        try {
+            const { data: myLink } = await supabaseClient.from('middleman_links').select('*').eq('citizen_id', myCitizenId).maybeSingle(); 
+            const inputBox = document.getElementById('add-middleman-box');
+            const statusDisplay = document.getElementById('middleman-status-display');
+            
+            if (myLink) {
+                inputBox.style.display = 'none';
+                if (myLink.status === 'Pending') {
+                    statusDisplay.innerHTML = `<span class="text-warning"><i class="bi bi-hourglass-split"></i> Request sent to ID: ${myLink.middleman_id}</span><button class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="cancelRequest()">Cancel</button>`;
+                } else {
+                    statusDisplay.innerHTML = `<span class="text-success"><i class="bi bi-shield-check"></i> Protected by ID: ${myLink.middleman_id}</span><button class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="cancelRequest()">Remove</button>`;
+                }
+            } else {
+                inputBox.style.display = 'flex';
+                statusDisplay.innerHTML = '';
+            }
+
+            const { data: myWards } = await supabaseClient.from('middleman_links').select('*').eq('middleman_id', myCitizenId);
+            const list = document.getElementById('protected-citizens-list');
+            const reportTargetDropdown = document.getElementById('reportTarget');
+            
+            list.innerHTML = '';
+            reportTargetDropdown.innerHTML = '<option value="ME">Myself (Current Location)</option>';
+
+            if (!myWards || myWards.length === 0) {
+                list.innerHTML = '<li class="list-group-item small text-muted">No one linked yet.</li>';
+            } else {
+                myWards.forEach(ward => {
+                    if (ward.status === 'Pending') {
+                        list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center small bg-warning bg-opacity-10"><span><strong>ID: ${ward.citizen_id}</strong> requests proxy.</span><div><button class="btn btn-sm btn-success py-0 fw-bold me-1" onclick="acceptMiddleman(${ward.id})"><i class="bi bi-check"></i></button><button class="btn btn-sm btn-danger py-0 fw-bold" onclick="rejectMiddleman(${ward.id})"><i class="bi bi-x"></i></button></div></li>`;
+                    } else {
+                        list.innerHTML += `<li class="list-group-item small text-success fw-bold"><i class="bi bi-person-check-fill"></i> Protecting ID: ${ward.citizen_id}</li>`;
+                        reportTargetDropdown.innerHTML += `<option value="${ward.citizen_id}">Citizen-${ward.citizen_id} (Proxy Report)</option>`;
+                    }
+                });
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    async function requestMiddleman() {
+        const targetId = document.getElementById('middleman-input').value.trim();
+        if(!targetId || targetId === myCitizenId) return alert("Please enter a valid Middleman ID.");
+        await supabaseClient.from('middleman_links').delete().eq('citizen_id', myCitizenId);
+        const { error } = await supabaseClient.from('middleman_links').insert({ citizen_id: myCitizenId, middleman_id: targetId, status: 'Pending' });
+        if (!error) loadNetworkData(); else alert("Failed to send request.");
+    }
+
+    async function acceptMiddleman(linkId) {
+        await supabaseClient.from('middleman_links').update({ status: 'Accepted' }).eq('id', linkId);
+        loadNetworkData();
+    }
+
+    async function rejectMiddleman(linkId) {
+        await supabaseClient.from('middleman_links').delete().eq('id', linkId);
+        loadNetworkData();
+    }
+
+    async function cancelRequest() {
+        await supabaseClient.from('middleman_links').delete().eq('citizen_id', myCitizenId);
+        loadNetworkData();
     }
 </script>
 </body>
