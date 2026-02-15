@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AapdaSetu | AI Mesh Network</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
+        
+        /* SIDEBAR */
+        .sidebar { min-height: 100vh; background: #1a252f; color: white; padding-top: 20px; position: fixed; width: 16.66%; z-index: 100; }
+        .sidebar a { color: #b0c4de; text-decoration: none; padding: 15px 20px; display: flex; align-items: center; transition: 0.3s; border-left: 4px solid transparent; }
+        .sidebar a:hover { background: #34495e; color: #fff; }
+        .sidebar a.active { background: #2c3e50; color: #fff; border-left: 4px solid #0dcaf0; background: linear-gradient(90deg, rgba(44,62,80,1) 0%, rgba(26,37,47,0) 100%); }
+        
+        .main-content { margin-left: 16.66%; padding: 30px; }
+        
+        /* DARK MAP CONTAINER */
+        .map-container { height: 65vh; width: 100%; border-radius: 12px; border: 2px solid #2c3e50; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        
+        /* NODE STATS LIST */
+        .node-panel { background: #1a252f; border-radius: 12px; color: white; padding: 20px; height: 65vh; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        
+        .compact-node-card { background: #2c3e50; border-radius: 8px; padding: 12px; margin-bottom: 12px; border-left: 4px solid #198754; transition: 0.3s; cursor: pointer; }
+        .compact-node-card:hover { background: #34495e; transform: translateX(-2px); }
+        .compact-node-card.warning-state { border-left-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+        
+        .stat-pill { background: rgba(0,0,0,0.2); border-radius: 20px; padding: 4px 8px; font-size: 0.75rem; font-weight: bold; }
+        .text-danger-custom { color: #ff6b6b !important; }
+        .text-warning-custom { color: #feca57 !important; }
+        .text-success-custom { color: #1dd1a1 !important; }
+        
+        /* CUSTOM SCROLLBAR */
+        .node-panel::-webkit-scrollbar { width: 6px; }
+        .node-panel::-webkit-scrollbar-track { background: #1a252f; }
+        .node-panel::-webkit-scrollbar-thumb { background: #0dcaf0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <h4 class="text-center mb-5 fw-bold pt-3"><i class="bi bi-shield-shaded me-2"></i>AapdaSetu</h4>
+            <small class="text-muted text-uppercase fw-bold ms-3" style="font-size: 0.7rem; letter-spacing: 1px;">Command Center</small>
+            <a href="index.html"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="analytics.html"><i class="bi bi-bar-chart me-2"></i> Mission Control</a>
+            <a href="resource_allocation.html"><i class="bi bi-box-seam me-2"></i> Logistics & Orders</a>
+            <a href="ai_mesh.html" class="active"><i class="bi bi-cpu me-2"></i> AI Mesh Network</a>
+            <div class="mt-5 pt-5 border-top border-secondary mx-3">
+                <a href="../index.html" class="text-danger ps-0"><i class="bi bi-box-arrow-left me-2"></i> Secure Logout</a>
+            </div>
+        </div>
+
+        <div class="col-md-10 main-content">
+            
+            <div id="global-warning-banner" class="alert alert-success d-flex align-items-center fw-bold shadow-sm" style="display: none;">
+                <i class="bi bi-shield-check fs-4 me-3"></i> 
+                <div>
+                    <span id="banner-title">ALL SYSTEMS NOMINAL</span><br>
+                    <small class="fw-normal" id="banner-desc">No elevated risks detected across the AI Mesh Network.</small>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark"><i class="bi bi-diagram-3 text-primary"></i> Regional AI Node Radar</h3>
+                    <p class="text-muted mb-0">Live 10km radius threat detection updating every 15 minutes.</p>
+                </div>
+                <div class="badge bg-dark border border-info text-info d-flex align-items-center px-3 py-2 shadow-sm fs-6">
+                    <span class="spinner-grow spinner-grow-sm text-info me-2"></span> <span id="sync-status">Mesh Active</span>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div id="meshMap" class="map-container"></div>
+                    <div class="mt-2 text-muted small fw-bold d-flex justify-content-between">
+                        <span>
+                            <i class="bi bi-circle-fill" style="color: #198754;"></i> Safe Zone (<=50%) &nbsp;&nbsp; | &nbsp;&nbsp; 
+                            <i class="bi bi-circle-fill" style="color: #ffc107;"></i> Elevated Risk Zone (>50%)
+                        </span>
+                        <span>Radius: 10 km per node</span>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="node-panel">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
+                            <h5 class="fw-bold text-info mb-0"><i class="bi bi-list-ul"></i> Deployed Models</h5>
+                            <small class="text-muted" id="last-update-time">--:--</small>
+                        </div>
+
+                        <div id="mesh-cards-container">
+                            <div class="text-center text-muted mt-5 pt-5">
+                                <div class="spinner-border text-info mb-3"></div>
+                                <p>Fetching live node data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let meshMap;
+    let liveNodeMemory = {}; 
+    let mapCircles = {}; // Store circles to update colors later
+    let mapMarkers = {}; // Store central dots
+
+    window.initMeshMap = function() {
+        const center = { lat: 22.0, lng: 82.0 }; 
+        
+        meshMap = new google.maps.Map(document.getElementById("meshMap"), {
+            zoom: 5, 
+            center: center,
+            disableDefaultUI: true,
+            styles: [
+                { elementType: 'geometry', stylers: [{ color: '#1a252f' }] },
+                { elementType: 'labels.text.stroke', stylers: [{ color: '#1a252f' }] },
+                { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
+                { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c3e50' }] }
+            ]
+        });
+        
+        fetchMeshNodes();
+        setupRealtime();
+    }
+
+    function setupRealtime() {
+        supabaseClient.channel('mesh-updates')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ai_mesh_nodes' }, payload => {
+                
+                // 1. Update memory
+                liveNodeMemory[payload.new.id] = payload.new;
+
+                // 2. Flash UI badge
+                const statusBadge = document.getElementById('sync-status');
+                statusBadge.innerHTML = `<i class="bi bi-check-circle-fill"></i> Data Synced!`;
+                statusBadge.parentElement.classList.replace('border-info', 'border-success');
+                statusBadge.parentElement.classList.replace('text-info', 'text-success');
+                setTimeout(() => {
+                    statusBadge.innerText = "Mesh Active";
+                    statusBadge.parentElement.classList.replace('border-success', 'border-info');
+                    statusBadge.parentElement.classList.replace('text-success', 'text-info');
+                }, 3000);
+                
+                // 3. Update the specific circle color on the map
+                updateMapCircle(payload.new);
+
+                // 4. Re-render the side list & Global Warning
+                renderAllNodesList();
+                evaluateGlobalWarning();
+
+            }).subscribe();
+    }
+
+    async function fetchMeshNodes() {
+        const { data: nodes, error } = await supabaseClient.from('ai_mesh_nodes').select('*');
+        if (error || !nodes) return console.error("DB Error:", error);
+
+        nodes.forEach(node => {
+            liveNodeMemory[node.id] = node;
+            const pos = { lat: node.latitude, lng: node.longitude };
+
+            // 1. The Minimal Center Dot
+            mapMarkers[node.id] = new google.maps.Marker({
+                position: pos,
+                map: meshMap,
+                title: node.region_name,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 4, // Very minimal
+                    fillColor: "#ffffff",
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: "#0dcaf0"
+                }
+            });
+
+            // 2. The 10km Radius Circle
+            const maxProb = Math.max(node.heatwave_prob, node.landslide_prob, node.flood_prob);
+            const isWarning = maxProb > 50;
+            const statusColor = isWarning ? "#ffc107" : "#198754"; // Yellow vs Green
+
+            mapCircles[node.id] = new google.maps.Circle({
+                strokeColor: statusColor,
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: statusColor,
+                fillOpacity: 0.25,
+                map: meshMap,
+                center: pos,
+                radius: 10000 // 10 KM
+            });
+        });
+
+        renderAllNodesList();
+        evaluateGlobalWarning();
+    }
+
+    function updateMapCircle(node) {
+        if(mapCircles[node.id]) {
+            const maxProb = Math.max(node.heatwave_prob, node.landslide_prob, node.flood_prob);
+            const isWarning = maxProb > 50;
+            const statusColor = isWarning ? "#ffc107" : "#198754";
+            
+            mapCircles[node.id].setOptions({
+                strokeColor: statusColor,
+                fillColor: statusColor
+            });
+        }
+    }
+
+    function renderAllNodesList() {
+        const container = document.getElementById('mesh-cards-container');
+        container.innerHTML = ''; // Clear loading/old data
+        
+        let latestTime = null;
+
+        Object.values(liveNodeMemory).forEach(node => {
+            const maxProb = Math.max(node.heatwave_prob, node.landslide_prob, node.flood_prob);
+            const isWarning = maxProb > 50;
+            const warningClass = isWarning ? 'warning-state' : '';
+            
+            // Track the most recent update time for the header
+            const nodeTime = new Date(node.last_updated);
+            if(!latestTime || nodeTime > latestTime) latestTime = nodeTime;
+
+            const html = `
+                <div class="compact-node-card shadow-sm ${warningClass}" onclick="focusNode(${node.latitude}, ${node.longitude})">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold ${isWarning ? 'text-warning' : 'text-success'}">
+                            <i class="bi bi-geo-alt-fill"></i> ${node.region_name}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-2">
+                        <div class="stat-pill text-light">🌊 Flood: <span class="${getColor(node.flood_prob)}">${node.flood_prob}%</span></div>
+                        <div class="stat-pill text-light">🌡️ Heat: <span class="${getColor(node.heatwave_prob)}">${node.heatwave_prob}%</span></div>
+                        <div class="stat-pill text-light">⛰️ Land: <span class="${getColor(node.landslide_prob)}">${node.landslide_prob}%</span></div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+
+        if(latestTime) {
+            document.getElementById('last-update-time').innerText = `Updated: ${latestTime.toLocaleTimeString()}`;
+        }
+    }
+
+    function evaluateGlobalWarning() {
+        const banner = document.getElementById('global-warning-banner');
+        const bannerTitle = document.getElementById('banner-title');
+        const bannerDesc = document.getElementById('banner-desc');
+        
+        let warningNodes = [];
+        
+        Object.values(liveNodeMemory).forEach(node => {
+            if (Math.max(node.heatwave_prob, node.landslide_prob, node.flood_prob) > 50) {
+                warningNodes.push(node.region_name);
+            }
+        });
+
+        if (warningNodes.length > 0) {
+            // DANGER STATE
+            banner.className = "alert alert-warning d-flex align-items-center fw-bold shadow-sm mb-4 border-warning";
+            banner.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-danger pulse"></i> 
+                <div>
+                    <span class="text-danger">⚠️ ELEVATED THREAT DETECTED</span><br>
+                    <small class="fw-normal text-dark">AI prediction > 50% in: <strong>${warningNodes.join(', ')}</strong>. Consider resource reallocation.</small>
+                </div>
+            `;
+        } else {
+            // SAFE STATE
+            banner.className = "alert alert-success d-flex align-items-center fw-bold shadow-sm mb-4 border-success";
+            banner.innerHTML = `
+                <i class="bi bi-shield-check fs-3 me-3 text-success"></i> 
+                <div>
+                    <span class="text-success">ALL SYSTEMS NOMINAL</span><br>
+                    <small class="fw-normal text-dark">No elevated risks detected across the AI Mesh Network.</small>
+                </div>
+            `;
+        }
+    }
+
+    // Helper: Color code individual percentages inside the cards
+    function getColor(prob) {
+        if (prob > 50) return "text-danger-custom";
+        if (prob > 30) return "text-warning-custom";
+        return "text-success-custom";
+    }
+
+    // Pan map when clicking a card in the list
+    function focusNode(lat, lng) {
+        meshMap.panTo({lat, lng});
+        meshMap.setZoom(9);
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMeshMap&loading=async" async defer></script>
+
+</body>
+</html>
