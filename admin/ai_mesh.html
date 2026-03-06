@@ -37,6 +37,16 @@
         .node-panel::-webkit-scrollbar { width: 6px; }
         .node-panel::-webkit-scrollbar-track { background: #1a252f; }
         .node-panel::-webkit-scrollbar-thumb { background: #0dcaf0; border-radius: 10px; }
+        
+        /* CUSTOM CENTER DOT STYLING FOR ADVANCED MARKER */
+        .mesh-center-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #ffffff;
+            border: 2px solid #0dcaf0;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(13, 202, 240, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -117,8 +127,8 @@
 
     let meshMap;
     let liveNodeMemory = {}; 
-    let mapCircles = {}; // Store circles to update colors later
-    let mapMarkers = {}; // Store central dots
+    let mapCircles = {}; 
+    let mapMarkers = {}; 
 
     window.initMeshMap = function() {
         const center = { lat: 22.0, lng: 82.0 }; 
@@ -127,6 +137,7 @@
             zoom: 5, 
             center: center,
             disableDefaultUI: true,
+            mapId: "DEMO_MAP_ID_MESH", // ✅ REQUIRED FOR ADVANCED MARKERS
             styles: [
                 { elementType: 'geometry', stylers: [{ color: '#1a252f' }] },
                 { elementType: 'labels.text.stroke', stylers: [{ color: '#1a252f' }] },
@@ -176,22 +187,20 @@
             liveNodeMemory[node.id] = node;
             const pos = { lat: node.latitude, lng: node.longitude };
 
-            // 1. The Minimal Center Dot
-            mapMarkers[node.id] = new google.maps.Marker({
+            // ✅ FIXED: Create a custom HTML element for the Advanced Marker's central dot
+            const centerDot = document.createElement("div");
+            centerDot.className = "mesh-center-dot";
+            centerDot.title = node.region_name;
+
+            // ✅ FIXED: The Minimal Center Dot using AdvancedMarkerElement
+            mapMarkers[node.id] = new google.maps.marker.AdvancedMarkerElement({
                 position: pos,
                 map: meshMap,
                 title: node.region_name,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 4, // Very minimal
-                    fillColor: "#ffffff",
-                    fillOpacity: 1,
-                    strokeWeight: 2,
-                    strokeColor: "#0dcaf0"
-                }
+                content: centerDot // Use the custom HTML div we just created
             });
 
-            // 2. The 10km Radius Circle
+            // 2. The 10km Radius Circle (Circles stay the same, they aren't markers)
             const maxProb = Math.max(node.heatwave_prob, node.landslide_prob, node.flood_prob);
             const isWarning = maxProb > 50;
             const statusColor = isWarning ? "#ffc107" : "#198754"; // Yellow vs Green
@@ -313,7 +322,7 @@
     }
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMeshMap&loading=async" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMeshMap&libraries=marker&loading=async" async defer></script>
 
 </body>
 </html>
