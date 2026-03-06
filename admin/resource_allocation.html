@@ -129,7 +129,6 @@
 
     // --- REALTIME UPDATES ---
     function setupRealtimeListeners() {
-        // Listening to both tables ensures the "Live Join" is always accurate
         const channels = supabaseClient.channel('custom-all-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, () => {
                 fetchDataAndRender(); 
@@ -143,14 +142,12 @@
     // --- CORE LOGIC: FETCH & RENDER (LIVE JOIN) ---
     async function fetchDataAndRender() {
         try {
-            // 1. Fetch Resources
             const { data: resources, error: resError } = await supabaseClient
                 .from('resources')
                 .select('*')
                 .order('id');
             if (resError) throw resError;
 
-            // 2. Fetch Active Missions (For Coordinates)
             const { data: activeMissions, error: repError } = await supabaseClient
                 .from('citizen_reports')
                 .select('*')
@@ -180,7 +177,6 @@
             let locationDisplay = `<span class="text-muted"><i class="bi bi-house-door-fill"></i> Base Camp</span>`;
             
             if (r.status === 'Deployed') {
-                // Match Resource Name to Report Assignment
                 const mission = activeMissions.find(m => 
                     m.assigned_to && m.assigned_to.trim().toLowerCase() === r.name.trim().toLowerCase()
                 );
@@ -188,7 +184,6 @@
                 if (mission) {
                     const lat = mission.latitude || 0;
                     const lng = mission.longitude || 0;
-                    // Format for display
                     locationDisplay = `
                         <div class="d-flex flex-column" data-bs-toggle="tooltip" data-bs-placement="top" title="GPS: ${lat}, ${lng}">
                             <span class="fw-bold text-dark" style="font-family: monospace;">
@@ -225,14 +220,11 @@
         document.getElementById('count-avail').innerText = availableCount;
         document.getElementById('count-dep').innerText = deployedCount;
         
-        // Re-init Tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl) });
     }
 
     // --- AI DISPATCHER ---
-    // --- AI DISPATCHER (OPENAI POWERED LOGIC) ---
-    // --- AI DISPATCHER (OPENAI WITH LOCAL FALLBACK) ---
     async function fetchPendingReports() {
         const { data: reports } = await supabaseClient
             .from('citizen_reports')
@@ -277,13 +269,13 @@
                     </div>
                 </div>`;
             
-            // 1. Try to get the decision from OpenAI
-            let aiDecision = await askOpenAIForDispatch(report, availableResources);
+            // 1. Try to get the decision from Gemini API Proxy
+            let aiDecision = await askAIDispatcher(report, availableResources);
             let match = null;
 
-            // 2. FALLBACK MATRIX: If OpenAI API fails (Rate Limit, Network Error)
+            // 2. FALLBACK MATRIX
             if (aiDecision === "ERROR" || !aiDecision) {
-                console.warn(`[Report #${report.id}] OpenAI API failed/rate-limited. Engaging Local Routing Fallback.`);
+                console.warn(`[Report #${report.id}] AI API failed. Engaging Local Routing Fallback.`);
                 const routingLogic = {
                     'Medical': ['Medical'],
                     'Flood': ['Rescue', 'Surveillance'],
@@ -294,9 +286,8 @@
                 const allowed = routingLogic[report.category] || ['Rescue'];
                 match = availableResources.find(r => allowed.includes(r.type));
             } 
-            // 3. PARSE OPENAI DECISION
+            // 3. PARSE AI DECISION
             else if (aiDecision !== "NONE") {
-                // Extract the first number found in OpenAI's response (e.g., "ID: 2" -> "2")
                 const extractedNumbers = aiDecision.match(/\d+/);
                 if (extractedNumbers) {
                     const numericId = extractedNumbers[0];
@@ -304,14 +295,12 @@
                 }
             }
             
-            // Remove loading card
             document.getElementById(loadingId).remove();
 
             const lat = Number(report.latitude || 0).toFixed(4);
             const lng = Number(report.longitude || 0).toFixed(4);
 
             if (match) {
-                // SUCCESS MATCH
                 const card = `
                     <div class="card ai-suggestion mb-3 shadow-sm border-0 border-start border-5 border-primary">
                         <div class="card-body p-3">
@@ -341,7 +330,6 @@
                     </div>`;
                 container.innerHTML += card;
             } else {
-                // TRUE MISMATCH (No units exist for this type)
                 const warningCard = `
                     <div class="card ai-suggestion mb-3 shadow-sm border-0 border-start border-5 border-danger bg-danger bg-opacity-10">
                         <div class="card-body p-3">
@@ -361,9 +349,8 @@
         }
     }
 
-    // --- OPENAI REASONING ENGINE ---
-    // ✅ NEW CODE: SECURE AI DISPATCHER (Points to your local Node server)
-    async function askOpenAIForDispatch(report, availableResources) {
+    // ✅ NEW CODE: SECURE GEMINI DISPATCHER (Points to your local Node server)
+    async function askAIDispatcher(report, availableResources) {
         const teamsList = availableResources.map(r => `ID: ${r.id} | Name: ${r.name} | Type: ${r.type}`).join('\n');
         
         const systemPrompt = `
@@ -387,12 +374,12 @@
         `;
 
         try {
-            // 🚨 NOTICE: We are now fetching from '/api/ai-dispatch' and there is NO API Key here!
+            // 🚨 NOTICE: We fetch from '/api/ai-dispatch', which our Node Server handles using Gemini!
             const response = await fetch('/api/ai-dispatch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: "gpt-4o-mini", 
+                    model: "gemini-1.5-flash", // Updated to Gemini
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: userPrompt }
@@ -405,20 +392,21 @@
             const data = await response.json();
             
             if (data.error) {
-                console.error("OpenAI API Error:", data.error.message);
+                console.error("AI Proxy Error:", data.error.message);
                 return "ERROR";
             }
 
             const aiDecision = data.choices[0].message.content.trim();
-            console.log(`OpenAI Output for Report ${report.id}:`, aiDecision);
+            console.log(`AI Output for Report ${report.id}:`, aiDecision);
             return aiDecision;
 
         } catch (error) {
-            console.error("OpenAI Dispatch Request Failed:", error);
+            console.error("AI Dispatch Request Failed:", error);
             return "ERROR";
         }
     }
-    // --- OFFICIAL ORDER GENERATOR (UPDATED PDF) ---
+
+    // --- OFFICIAL ORDER GENERATOR (CLEANED UP DATABASE CALLS) ---
     async function generateOfficialOrder(resId, resName, reportId, btnElement) {
         
         const originalText = btnElement.innerHTML;
@@ -435,10 +423,8 @@
 
             if (error) throw error;
 
-            // Prepare Variables
             const lat = reportData.latitude;
             const lng = reportData.longitude;
-            // Combining Name + Coords so it fits in your layout
             const targetLocation = `${reportData.location_text || "Field Loc"} (${lat}, ${lng})`;
             const missionCode = `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
             const dateStr = new Date().toLocaleDateString();
@@ -447,7 +433,6 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // -- HEADER --
             doc.setFont("times", "bold");
             doc.setFontSize(16);
             doc.text("GOVERNMENT OF INDIA", 105, 20, null, null, "center");
@@ -458,13 +443,11 @@
             doc.setLineWidth(0.5);
             doc.line(20, 38, 190, 38); 
 
-            // -- META DATA --
             doc.setFont("times", "normal");
             doc.setFontSize(10);
             doc.text(`Order No: ${missionCode}`, 20, 48);
             doc.text(`Date: ${dateStr}`, 150, 48);
 
-            // -- RECIPIENT --
             doc.setFont("times", "bold");
             doc.text("To,", 20, 60);
             doc.text(`The Unit Commander,`, 20, 65);
@@ -472,19 +455,13 @@
             doc.setFont("times", "normal");
             doc.text("Base Camp HQ", 20, 75);
 
-            // -- SUBJECT --
             doc.setFont("times", "bold");
             doc.text(`Subject: IMMEDIATE DEPLOYMENT ORDER - ${reportData.category.toUpperCase()} RESPONSE`, 20, 90);
 
-            // -- BODY --
             doc.setFont("times", "normal");
-            const bodyText = `1. In exercise of powers conferred under Section 24 of the Disaster Management Act, the Competent Authority has ordered the immediate mobilization of ${resName}.
-
-2. You are hereby directed to move with immediate effect to the following target location:`;
-            
+            const bodyText = `1. In exercise of powers conferred under Section 24 of the Disaster Management Act, the Competent Authority has ordered the immediate mobilization of ${resName}.\n\n2. You are hereby directed to move with immediate effect to the following target location:`;
             doc.text(doc.splitTextToSize(bodyText, 170), 20, 105);
 
-            // -- LOCATION BOX --
             doc.setDrawColor(0);
             doc.setFillColor(245, 245, 245);
             doc.rect(30, 135, 150, 30, 'FD');
@@ -493,19 +470,16 @@
             doc.text(`PRIORITY: CRITICAL / IMMEDIATE`, 40, 155);
             doc.text(`INCIDENT ID: #${reportId}`, 130, 155);
 
-            // -- FOOTER --
             doc.setFont("times", "normal");
             doc.text("3. The Unit Commander is directed to establish communication with Control Room upon arrival.", 20, 180);
             doc.text("4. Strict adherence to safety protocols is mandatory.", 20, 188);
 
-            // -- SIGNATURE --
             doc.setFont("times", "bold");
             doc.text("(Signed)", 150, 220);
             doc.text("CHIEF OPERATIONS OFFICER", 130, 225);
             doc.text("AapdaSetu Command Center", 130, 230);
             doc.text("Government of India", 130, 235);
 
-            // -- DIGITAL STAMP --
             doc.setDrawColor(255, 0, 0); 
             doc.setLineWidth(1);
             doc.circle(160, 225, 15);
@@ -514,40 +488,20 @@
             doc.text("DIGITALLY", 152, 222);
             doc.text("AUTHORIZED", 149, 228);
             
-            // SAVE PDF
-            doc.save(`Deployment_Order_${resName}_${missionCode}.pdf`);
-
-            // 3. DATABASE UPDATES
-            // -- DIGITAL STAMP --
-            doc.setDrawColor(255, 0, 0); 
-            doc.setLineWidth(1);
-            doc.circle(160, 225, 15);
-            doc.setTextColor(255, 0, 0);
-            doc.setFontSize(8);
-            doc.text("DIGITALLY", 152, 222);
-            doc.text("AUTHORIZED", 149, 228);
-            
-            // ==========================================
-            // NEW CLOUD UPLOAD LOGIC
-            // ==========================================
-            
-            // 1. Convert the generated PDF into a File Blob instead of downloading
+            // 3. UPLOAD TO SUPABASE
             const pdfBlob = doc.output('blob');
             const fileName = `Deployment_Order_${resName.replace(/\s/g, '_')}_${missionCode}.pdf`;
 
-            // 2. Upload to your Supabase Storage (Reusing your existing 'reports' bucket)
             const { data: uploadData, error: uploadError } = await supabaseClient.storage
                 .from('reports') 
                 .upload(fileName, pdfBlob, { contentType: 'application/pdf' });
 
             if (uploadError) throw uploadError;
 
-            // 3. Get the Public URL of the uploaded PDF
             const { data: urlData } = supabaseClient.storage.from('reports').getPublicUrl(fileName);
             const finalPdfUrl = urlData.publicUrl;
 
             // 4. DATABASE UPDATES
-            // A. Log Mission with the PDF URL included!
             await supabaseClient.from('mission_logs').insert([{
                 mission_code: missionCode,
                 team_name: resName,
@@ -555,60 +509,24 @@
                 incident_report_id: reportId,
                 target_location: targetLocation,
                 mission_type: reportData.category,
-                pdf_url: finalPdfUrl // <--- SAVED TO DATABASE
+                pdf_url: finalPdfUrl 
             }]);
 
-            // B. Update Resource Status
             await supabaseClient.from('resources').update({ 
                 status: 'Deployed', 
                 location: 'On Mission', 
                 last_updated: new Date().toISOString()
             }).eq('id', resId);
             
-            // C. Assign Report
             await supabaseClient.from('citizen_reports').update({ 
                 status: 'Assigned', 
                 assigned_to: resName, 
                 deployment_time: new Date().toISOString() 
             }).eq('id', reportId);
 
-            // 5. Open the Official Cloud PDF in a new tab for the Admin to see
             window.open(finalPdfUrl, '_blank');
 
-            // 6. Force UI Refresh
-            setTimeout(() => {
-                fetchDataAndRender();
-            }, 500);
-
-            btnElement.innerHTML = '<i class="bi bi-check-circle"></i> Deployed!';
-            btnElement.classList.remove('btn-primary');
-            btnElement.classList.add('btn-success');
-
-            // A. Log Mission
-            await supabaseClient.from('mission_logs').insert([{
-                mission_code: missionCode,
-                team_name: resName,
-                team_id: resId,
-                incident_report_id: reportId,
-                target_location: targetLocation,
-                mission_type: reportData.category
-            }]);
-
-            // B. Update Resource Status
-            await supabaseClient.from('resources').update({ 
-                status: 'Deployed', 
-                location: 'On Mission', 
-                last_updated: new Date().toISOString()
-            }).eq('id', resId);
-            
-            // C. Assign Report (Links report location to resource)
-            await supabaseClient.from('citizen_reports').update({ 
-                status: 'Assigned', 
-                assigned_to: resName, 
-                deployment_time: new Date().toISOString() 
-            }).eq('id', reportId);
-
-            // 4. Force UI Refresh
+            // 5. UI Updates
             setTimeout(() => {
                 fetchDataAndRender();
             }, 500);
