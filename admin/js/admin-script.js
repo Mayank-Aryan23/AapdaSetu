@@ -45,7 +45,7 @@ function setupRealtimeListeners() {
 }
 
 // Citizen Reports Management
-async function Reports() {
+async function fetchCitizenReports() {
     const { data: reports, error } = await supabaseClient
         .from('citizen_reports')
         .select('*')
