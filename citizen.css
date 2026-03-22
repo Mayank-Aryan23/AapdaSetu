@@ -1,0 +1,137 @@
+/* Base Styles */
+body { 
+    background-color: #f0f2f5; 
+    font-family: 'Segoe UI', sans-serif; 
+}
+
+.mobile-container { 
+    max-width: 500px; 
+    margin: 0 auto; 
+    background: #fff; 
+    min-height: 100vh; 
+    box-shadow: 0 0 20px rgba(0,0,0,0.05); 
+    position: relative; 
+}
+
+/* Status Header Styles */
+.status-safe { 
+    background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); 
+    color: white; 
+    padding: 40px 20px; 
+    border-radius: 0 0 30px 30px; 
+    text-align: center; 
+    transition: 0.5s; 
+}
+
+.status-danger { 
+    background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%); 
+    color: white; 
+    padding: 40px 20px; 
+    border-radius: 0 0 30px 30px; 
+    text-align: center; 
+    animation: pulseRed 2s infinite; 
+}
+
+@keyframes pulseRed { 
+    0% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0.7); } 
+    70% { box-shadow: 0 0 0 20px rgba(239, 71, 58, 0); } 
+    100% { box-shadow: 0 0 0 0 rgba(239, 71, 58, 0); } 
+}
+
+/* Weather Card Styles */
+.weather-card { 
+    background: #ffffff; 
+    border-radius: 15px; 
+    padding: 20px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+    margin-bottom: 20px; 
+    border: 1px solid #f0f0f0; 
+    margin-top: -20px; 
+    position: relative; 
+    z-index: 10; 
+}
+
+.weather-main { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 15px; 
+}
+
+.weather-metrics { 
+    display: flex; 
+    justify-content: space-between; 
+    border-top: 1px solid #eee; 
+    padding-top: 15px; 
+    margin-bottom: 15px; 
+    font-size: 0.9rem; 
+    color: #6c757d; 
+}
+
+.forecast-scroll { 
+    display: flex; 
+    overflow-x: auto; 
+    gap: 10px; 
+    padding-bottom: 5px; 
+    scrollbar-width: none; 
+}
+
+.forecast-scroll::-webkit-scrollbar { 
+    display: none; 
+}
+
+.forecast-item { 
+    min-width: 65px; 
+    text-align: center; 
+    font-size: 0.8rem; 
+    background: #f8f9fa; 
+    padding: 10px; 
+    border-radius: 12px; 
+    border: 1px solid #eee; 
+}
+
+/* Chat Interface Styles */
+.chat-interface { 
+    background: #f8f9fa; 
+    border-radius: 15px; 
+    height: 350px; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.chat-history { 
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding: 15px; 
+}
+
+.bot-msg { 
+    background: #e9ecef; 
+    padding: 10px 15px; 
+    border-radius: 15px 15px 15px 0; 
+    display: inline-block; 
+    margin-bottom: 10px; 
+    font-size: 0.9rem; 
+    max-width: 85%; 
+}
+
+.user-msg { 
+    background: #0d6efd; 
+    color: white; 
+    padding: 10px 15px; 
+    border-radius: 15px 15px 0 15px; 
+    display: inline-block; 
+    margin-bottom: 10px; 
+    float: right; 
+    clear: both; 
+    font-size: 0.9rem; 
+    max-width: 85%; 
+}
+
+.typing { 
+    font-style: italic; 
+    color: #888; 
+    font-size: 0.8rem; 
+    margin-left: 10px; 
+    display: none; 
+}
