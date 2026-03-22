@@ -3,158 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AapdaSetu | Disaster Response</title>
+    <title>AapdaSetu | Admin Command Center</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/admin-style.css">
 </head>
 <body>
 
-    <div id="landing-view" class="container-fluid">
-        <div class="row w-100 justify-content-center gap-4">
-            <div class="col-12 text-center text-white mb-5">
-                <h1 class="display-4 fw-bold">AAPDASETU</h1>
-                <p class="lead">Select your role to access the disaster management portal.</p>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card role-card p-4 text-center" onclick="selectRole('citizen')">
-                    <div class="card-body">
-                        <h2 class="text-success mb-3">Citizen</h2>
-                        <p class="text-muted">Receive alerts, report incidents, and access safety guides.</p>
-                        <button class="btn btn-outline-success w-100">Enter Portal</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card role-card p-4 text-center" onclick="selectRole('admin')">
-                    <div class="card-body">
-                        <h2 class="text-primary mb-3">Authority</h2>
-                        <p class="text-muted">Manage resources, verify alerts, and coordinate response.</p>
-                        <button class="btn btn-outline-primary w-100">Admin Login</button>
-                    </div>
-                </div>
-            </div>
+<div class="container-fluid">
+    <div class="row">
+        
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <h4 class="text-center mb-4 fw-bold">🛑 AapdaSetu</h4>
+            <a href="index.html" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="resource_allocation.html"><i class="bi bi-people me-2"></i> Resource Alloc.</a>
+            <a href="ai_mesh.html"><i class="bi bi-cpu me-2"></i> AI Mesh Network</a>
+            <a href="analytics.html"><i class="bi bi-clipboard-check me-2"></i> Analytics</a>
+            <hr>
+            <a href="../index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
         </div>
-    </div>
 
-    <div class="modal fade" id="authModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Verification Required</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="col-md-10 p-4">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold text-dark">Disaster Response Console</h2>
+                    <p class="text-muted mb-0">Region: <strong class="text-primary">Odisha Coastal Zone</strong></p>
                 </div>
-                <div class="modal-body">
-                    
-                    <div id="admin-inputs" class="d-none">
-                        <div class="mb-3">
-                            <label>Government ID</label>
-                            <input type="email" class="form-control" id="adminEmail" placeholder="admin@ndma.gov.in">
+                <button class="btn btn-warning fw-bold shadow-sm" onclick="simulateScraperInput()">
+                    <i class="bi bi-robot"></i> RUN AI SCRAPER
+                </button>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card stat-card p-2 mb-3">
+                        <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between">
+                            <span><i class="bi bi-geo-alt-fill text-primary"></i> Live Incident Map</span>
+                            <span class="badge bg-danger" id="active-alerts-count-badge">0 Active Alerts</span>
                         </div>
-                        <div class="mb-3">
-                            <label>Password</label>
-                            <input type="password" class="form-control" id="adminPass">
+                        <div id="googleMap" class="map-container"></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="card-header bg-success text-white fw-bold">
+                            <i class="bi bi-broadcast"></i> LIVE BROADCASTS (Public)
+                        </div>
+                        <div class="card-body" id="active-broadcasts-container">
+                            <p class="text-muted small">No active disasters.</p>
                         </div>
                     </div>
+                </div>
 
-                    <div id="citizen-inputs" class="d-none">
-                        <ul class="nav nav-pills nav-fill mb-4">
-                            <li class="nav-item">
-                                <a class="nav-link active" id="login-tab" href="#" onclick="showForm('login'); return false;">Login</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="register-tab" href="#" onclick="showForm('register'); return false;">Register</a>
-                            </li>
-                        </ul>
+                <div class="col-lg-5">
+                    <div class="card stat-card h-100">
+                        <div class="card-header bg-light p-0">
+                            <ul class="nav nav-tabs nav-fill" id="adminTabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active py-3" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-panel" type="button">
+                                        <i class="bi bi-stars text-warning"></i> AI Alerts
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link py-3" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports-panel" type="button">
+                                        <i class="bi bi-person-exclamation text-danger"></i> Citizen SOS
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
 
-                        <form id="loginForm" class="auth-form" data-form="login">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Email</label>
-                                <input type="email" class="form-control" id="loginEmail" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Password</label>
-                                <input type="password" class="form-control" id="loginPassword" required>
-                            </div>
-                            <div class="row mb-3 align-items-center">
-                                <div class="col-7">
-                                    <input type="text" class="form-control" id="loginCaptchaInput" placeholder="CAPTCHA" required>
+                        <div class="card-body panel-scroll tab-content">
+                            
+                            <div class="tab-pane fade show active" id="ai-panel">
+                                <div id="incoming-alerts">
+                                    <div class="text-center text-muted mt-5" id="ai-empty-state">
+                                        <i class="bi bi-shield-check display-1 opacity-25"></i>
+                                        <p class="mt-3">AI Scraper is monitoring sources...</p>
+                                    </div>
                                 </div>
-                                <div class="col-5 d-flex align-items-end justify-content-end">
-                                    <div id="loginCaptchaDisplay" class="captcha-box me-2"></div>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateCaptcha('login')">
-                                        <i class="bi bi-arrow-repeat"></i>
+                            </div>
+
+                            <div class="tab-pane fade" id="reports-panel">
+                                <div class="d-flex justify-content-between mb-3 align-items-center">
+                                    <small class="text-muted fw-bold">PRIORITY SORTED</small>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="fetchCitizenReports()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
                                     </button>
                                 </div>
+                                <div id="citizen-reports-feed">
+                                    <div class="text-center text-muted mt-5">
+                                        <p>Loading reports...</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="d-grid gap-2 mb-3">
-                                <button type="button" class="btn location-btn-base location-btn-pending fw-bold" id="loginLocationBtn" onclick="getLocation('login')">
-                                    <i class="bi bi-geo-alt-fill me-2"></i> Enable Location
-                                </button>
-                                <p id="loginLocationStatus" class="text-center small text-muted mb-0"></p>
-                            </div>
-                            <button type="submit" class="btn btn-success w-100 fw-bold py-2" id="loginBtn">ACCESS PORTAL</button>
-                        </form>
 
-                        <form id="registerForm" class="auth-form d-none" data-form="register">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Full Name</label>
-                                <input type="text" class="form-control" id="regName" required>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label small fw-bold">Email</label>
-                                    <input type="email" class="form-control" id="regEmail" required>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label small fw-bold">Age</label>
-                                    <input type="number" class="form-control" id="regAge" min="18" required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Password</label>
-                                <input type="password" class="form-control" id="regPassword" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Re-enter Password</label>
-                                <input type="password" class="form-control" id="regConfirmPassword" required>
-                            </div>
-                            <div class="row mb-3 align-items-center">
-                                <div class="col-7">
-                                    <input type="text" class="form-control" id="registerCaptchaInput" placeholder="CAPTCHA" required>
-                                </div>
-                                <div class="col-5 d-flex align-items-end justify-content-end">
-                                    <div id="registerCaptchaDisplay" class="captcha-box me-2"></div>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateCaptcha('register')">
-                                        <i class="bi bi-arrow-repeat"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="d-grid gap-2 mb-3">
-                                <button type="button" class="btn location-btn-base location-btn-pending fw-bold" id="regLocationBtn" onclick="getLocation('register')">
-                                    <i class="bi bi-geo-alt-fill me-2"></i> Enable Location (Mandatory)
-                                </button>
-                                <p id="regLocationStatus" class="text-center small text-muted mb-0"></p>
-                            </div>
-                            <button type="submit" class="btn btn-success w-100 fw-bold py-2" id="registerBtn">CREATE ACCOUNT</button>
-                        </form>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="modal-footer" id="modalFooter">
-                    <button type="button" class="btn btn-primary w-100" id="adminAccessBtn" style="display:none" onclick="handleAdminLogin()">Access Portal</button>
-                </div>
-            </div>
+            </div> 
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/admin-script.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNX00snr3BdhknJFTBX9l3ekhrhJzg8PA&callback=initMap&libraries=marker&loading=async" async defer></script>
+
 </body>
 </html>
