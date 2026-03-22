@@ -1,0 +1,56 @@
+/* General Base Styles */
+body { 
+    background-color: #f8f9fa; 
+    font-family: 'Segoe UI', sans-serif; 
+}
+
+/* Layout Views */
+#landing-view { 
+    height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+}
+
+/* Card Components */
+.role-card { 
+    transition: transform 0.3s; 
+    cursor: pointer; 
+    border: none; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+}
+
+.role-card:hover { 
+    transform: translateY(-10px); 
+}
+
+/* Forms & Inputs */
+.captcha-box { 
+    background-color: #f8f9fa; 
+    border: 1px dashed #ced4da; 
+    color: #495057; 
+    font-size: 1.2rem; 
+    font-family: monospace; 
+    padding: 0.2rem 0.5rem; 
+    border-radius: 5px; 
+    letter-spacing: 4px; 
+    text-align: center; 
+}
+
+/* Interactive Buttons */
+.location-btn-base { 
+    transition: all 0.2s; 
+}
+
+.location-btn-pending { 
+    background-color: #ffc107; 
+    border-color: #ffc107; 
+    color: #212529; 
+}
+
+.location-btn-success { 
+    background-color: #198754; 
+    border-color: #198754; 
+    color: white; 
+}
