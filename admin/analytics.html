@@ -2,38 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AapdaSetu | Analytics</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #f4f6f9; overflow-x: hidden; }
-        .sidebar { min-height: 100vh; background: #2c3e50; color: white; padding-top: 20px; position: fixed; width: 16.66%; }
-        .sidebar a { color: #b0c4de; text-decoration: none; padding: 15px 20px; display: flex; align-items: center; transition: 0.3s; border-left: 4px solid transparent; }
-        .sidebar a:hover { background: #34495e; color: #fff; }
-        .sidebar a.active { background: #34495e; color: #fff; border-left: 4px solid #0dcaf0; background: linear-gradient(90deg, rgba(52,73,94,1) 0%, rgba(44,62,80,0) 100%); }
-        .main-content { margin-left: 16.66%; padding: 20px; }
-        .stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    </style>
+    
+    <link rel="stylesheet" href="css/analytics-style.css">
 </head>
 <body>
 
 <div class="container-fluid">
     <div class="row">
+        
         <div class="col-md-2 sidebar d-none d-md-block">
             <h4 class="text-center mb-5 fw-bold pt-2">🛑 AapdaSetu</h4>
             <small class="text-muted text-uppercase fw-bold ms-3" style="font-size: 0.7rem;">Operations</small>
+            
             <a href="index.html"><i class="bi bi-crosshair me-2"></i> Mission Control</a>
             <a href="resource_allocation.html"><i class="bi bi-box-seam me-2"></i> Resource Alloc.</a>
             <a href="ai_mesh.html"><i class="bi bi-cpu me-2"></i> AI Mesh Network</a>
             <a href="analytics.html" class="active"><i class="bi bi-bar-chart me-2"></i> Analytics</a>
-            <div class="mt-5 pt-5"><a href="../index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a></div>
+            
+            <div class="mt-5 pt-5">
+                <a href="../index.html" class="text-danger"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+            </div>
         </div>
 
         <div class="col-md-10 main-content">
+            
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold text-dark">Post-Disaster Analytics</h3>
-                <button class="btn btn-outline-primary btn-sm" onclick="loadAnalytics()"><i class="bi bi-arrow-clockwise"></i> Refresh Data</button>
+                <button class="btn btn-outline-primary btn-sm" onclick="loadAnalytics()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Data
+                </button>
             </div>
 
             <div class="row g-4">
@@ -58,132 +61,13 @@
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    // ================= CONFIGURATION =================
-    const SUPABASE_URL = 'https://cphqdgqtrosaxosdwdrz.supabase.co'; 
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwaHFkZ3F0cm9zYXhvc2R3ZHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MjU4NDQsImV4cCI6MjA3OTMwMTg0NH0.CGhmghdxQaPpD6uxDjaoAmnhZZsOKiiwacNw-ZrpDQc';
-    
-    // FIX: Renamed variable to avoid conflict
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script src="js/analytics-script.js"></script>
 
-    let timeChartInstance = null;
-    let catChartInstance = null;
-
-    window.onload = function() {
-        loadAnalytics(); 
-        setupLiveAnalytics(); 
-    };
-
-    function setupLiveAnalytics() {
-        // Updated to use supabaseClient
-        supabaseClient.channel('analytics-live')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'citizen_reports' }, payload => {
-                console.log("New Analytics Data!", payload);
-                loadAnalytics(); 
-            })
-            .subscribe();
-    }
-
-    async function loadAnalytics() {
-        // 1. FETCH REAL DATA (Updated to use supabaseClient)
-        const { data: reports, error } = await supabaseClient
-            .from('citizen_reports')
-            .select('*')
-            .order('created_at', { ascending: true });
-
-        if (error || !reports) return console.error(error);
-
-        // 2. PROCESS DATA FOR CATEGORY CHART
-        const categories = {};
-        
-        reports.forEach(r => {
-            // Count Categories
-            categories[r.category] = (categories[r.category] || 0) + 1;
-        });
-
-        document.getElementById('total-resolved').innerText = reports.length;
-
-        // 3. PROCESS DATA FOR RESPONSE TIME CHART
-        const responseLabels = [];
-        const responseData = [];
-
-        reports.forEach(r => {
-            if (r.deployment_time && r.created_at) {
-                const created = new Date(r.created_at);
-                const deployed = new Date(r.deployment_time);
-                // Calculate difference in Minutes
-                const diffMinutes = Math.round((deployed - created) / 1000 / 60);
-                
-                responseLabels.push(`Incident #${r.id}`);
-                responseData.push(diffMinutes);
-            }
-        });
-
-        // 4. RENDER CHARTS
-        renderCategoryChart(categories);
-        renderTimeChart(responseLabels, responseData);
-    }
-
-    function renderCategoryChart(dataObj) {
-        const ctx = document.getElementById('catChart');
-        const labels = Object.keys(dataObj);
-        const values = Object.values(dataObj);
-        
-        // Define colors dynamically
-        const colors = labels.map(l => {
-            if(l === 'Medical') return '#dc3545'; // Red
-            if(l === 'Flood') return '#0d6efd';   // Blue
-            if(l === 'Food') return '#ffc107';    // Yellow
-            return '#6c757d'; // Grey default
-        });
-
-        if (catChartInstance) catChartInstance.destroy();
-
-        catChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: { 
-                labels: labels, 
-                datasets: [{ 
-                    data: values, 
-                    backgroundColor: colors,
-                    borderWidth: 0
-                }] 
-            },
-            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
-        });
-    }
-
-    function renderTimeChart(labels, data) {
-        const ctx = document.getElementById('timeChart');
-
-        if (timeChartInstance) timeChartInstance.destroy();
-
-        timeChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { 
-                labels: labels, 
-                datasets: [{ 
-                    label: 'Response Time (Minutes)', 
-                    data: data, 
-                    borderColor: '#0d6efd', 
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }] 
-            },
-            options: { 
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Minutes' } }
-                }
-            }
-        });
-    }
-</script>
 </body>
 </html>
