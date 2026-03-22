@@ -1,0 +1,50 @@
+/* Base Styles */
+body { 
+    background-color: #f4f6f9; 
+    overflow-x: hidden; 
+}
+
+/* Sidebar Layout & Styling */
+.sidebar { 
+    min-height: 100vh; 
+    background: #2c3e50; 
+    color: white; 
+    padding-top: 20px; 
+    position: fixed; 
+    width: 16.66%; 
+}
+
+.sidebar a { 
+    color: #b0c4de; 
+    text-decoration: none; 
+    padding: 15px 20px; 
+    display: flex; 
+    align-items: center; 
+    transition: 0.3s; 
+    border-left: 4px solid transparent; 
+}
+
+.sidebar a:hover { 
+    background: #34495e; 
+    color: #fff; 
+}
+
+.sidebar a.active { 
+    background: #34495e; 
+    color: #fff; 
+    border-left: 4px solid #0dcaf0; 
+    background: linear-gradient(90deg, rgba(52,73,94,1) 0%, rgba(44,62,80,0) 100%); 
+}
+
+/* Main Content Area */
+.main-content { 
+    margin-left: 16.66%; 
+    padding: 20px; 
+}
+
+/* Cards & Containers */
+.stat-card { 
+    border: none; 
+    border-radius: 12px; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+}
