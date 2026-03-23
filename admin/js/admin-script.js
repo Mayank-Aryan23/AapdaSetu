@@ -314,19 +314,9 @@ async function resolveAlert(id) {
 
 async function simulateScraperInput() {
     await supabaseClient.from('alerts').insert({
-        title: "Cyclone Dana (AI Detected)", 
-        severity: "Critical",
-        summary: "Satellite imagery confirms deep depression. Expected landfall within 24 hours.", 
-        status: "Pending",
-        // ADDED: Explicit Odisha coordinates for the simulation
-        latitude: 20.94, 
-        longitude: 86.45,
-        radius_km: 50
+        title: "Cyclone Dana (AI Detected)", severity: "Critical",
+        summary: "Satellite imagery confirms deep depression. Expected landfall within 24 hours.", status: "Pending"
     });
-    
-    const triggerEl = document.querySelector('#ai-tab');
-    bootstrap.Tab.getInstance(triggerEl).show();
-}
     
     const triggerEl = document.querySelector('#ai-tab');
     bootstrap.Tab.getInstance(triggerEl).show();
