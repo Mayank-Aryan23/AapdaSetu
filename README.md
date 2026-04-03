@@ -4,7 +4,7 @@ Theme: AI for Societal Good | Status: MVP Complete
 AapdaSetu (Bridge in Calamity) is a unified disaster management platform that closes the "Information-to-Action" gap. It uses Real-time Geofencing, AI Automation, and Resource Optimization to connect Government Authorities with Citizens instantly during crises.
 
 **🚩 The Problem**
-Current disaster management suffers from a significant lag:
+Current disaster management suffers from a significant lag :
 
 
 Fragmented Data: Alerts exist in silos (News, TV, Radio) but aren't actionable.
