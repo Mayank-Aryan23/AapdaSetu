@@ -46,4 +46,4 @@ Human-in-the-Loop: Alerts are "Pending" until an Admin clicks Verify & Broadcast
 🆘 One-Tap Reporting: Submit "Medical" or "Flood" reports with GPS location and photos directly to the Admin Map.
 
 
-💬 Context-Aware Chatbot: A Gemini-powered assistant that knows where the user is and what the disaster is, providing specific survival guides.
+💬 Context-Aware Chatbot: A Gemini-powered assistant that knows where the user is and what the disaster is, providing specific survival guides.  
