@@ -1,6 +1,10 @@
 # AapdaSetu (Disaster Response System)
 Theme: AI for Societal Good | Status: MVP Complete
 
+Admin Login Credentials:-
+User ID:- admin@ndma.gov.in
+Password:- admin123
+
 AapdaSetu (Bridge in Calamity) is a unified disaster management platform that closes the "Information-to-Action" gap. It uses Real-time Geofencing, AI Automation, and Resource Optimization to connect Government Authorities with Citizens instantly during crises.
 
 **🚩 The Problem**
