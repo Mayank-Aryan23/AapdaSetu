@@ -1,5 +1,5 @@
 # AapdaSetu (Disaster Response System)
-Theme: AI for Societal Good | Status: MVP Complete
+
 
 Admin Login Credentials:-
 User ID:- admin@ndma.gov.in
